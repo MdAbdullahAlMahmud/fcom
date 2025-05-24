@@ -8,9 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "db:test": "tsx lib/db/test-connection.ts",
     "db:init": "tsx lib/db/init.ts",
-    "db:seed": "node --loader ts-node/esm lib/db/seed.ts",
-    "db:test": "tsx lib/db/test-connection.ts"
+    "setup": "chmod +x scripts/*.sh && ./scripts/setup.sh",
+    "dev:script": "chmod +x scripts/*.sh && ./scripts/dev.sh",
+    "build:script": "chmod +x scripts/*.sh && ./scripts/build.sh"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
