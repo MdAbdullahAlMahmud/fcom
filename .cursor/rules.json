@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "rules": {
+    "typescript": {
+      "maxLineLength": 100,
+      "namingConventions": {
+        "files": "kebab-case",
+        "components": "PascalCase",
+        "functions": "camelCase",
+        "constants": "UPPER_SNAKE_CASE",
+        "types": "PascalCase"
+      },
+      "imports": {
+        "order": [
+          "react",
+          "next",
+          "external",
+          "internal",
+          "styles",
+          "types"
+        ],
+        "newlineBetweenGroups": true
+      }
+    },
+    "react": {
+      "componentStructure": {
+        "order": [
+          "imports",
+          "types",
+          "component",
+          "exports"
+        ]
+      },
+      "hooks": {
+        "naming": "use*",
+        "order": [
+          "useState",
+          "useEffect",
+          "useCallback",
+          "useMemo",
+          "useRef",
+          "custom"
+        ]
+      }
+    },
+    "css": {
+      "tailwind": {
+        "order": [
+          "layout",
+          "spacing",
+          "sizing",
+          "typography",
+          "colors",
+          "effects",
+          "transitions"
+        ],
+        "grouping": true
+      }
+    },
+    "git": {
+      "commitMessage": {
+        "format": "type(scope): description",
+        "types": [
+          "feat",
+          "fix",
+          "docs",
+          "style",
+          "refactor",
+          "test",
+          "chore"
+        ]
+      },
+      "branchNaming": {
+        "feature": "feature/*",
+        "bugfix": "fix/*",
+        "hotfix": "hotfix/*",
+        "release": "release/*"
+      }
+    },
+    "database": {
+      "queryFormat": {
+        "usePreparedStatements": true,
+        "maxQueryLength": 500,
+        "requireComments": true
+      },
+      "naming": {
+        "tables": "snake_case",
+        "columns": "snake_case",
+        "indexes": "idx_table_column"
+      }
+    },
+    "documentation": {
+      "required": {
+        "components": true,
+        "functions": true,
+        "types": true,
+        "api": true
+      },
+      "format": "JSDoc"
+    },
+    "testing": {
+      "coverage": {
+        "minimum": 80,
+        "requiredFiles": [
+          "components",
+          "hooks",
+          "utils"
+        ]
+      },
+      "naming": {
+        "testFiles": "*.test.ts",
+        "testSuites": "describe",
+        "testCases": "it"
+      }
+    },
+    "security": {
+      "required": {
+        "inputSanitization": true,
+        "errorHandling": true,
+        "authentication": true,
+        "authorization": true
+      }
+    },
+    "performance": {
+      "maxBundleSize": "200KB",
+      "required": {
+        "imageOptimization": true,
+        "codeSplitting": true,
+        "lazyLoading": true
+      }
+    },
+    "accessibility": {
+      "required": {
+        "altText": true,
+        "ariaLabels": true,
+        "keyboardNavigation": true,
+        "colorContrast": true
+      }
+    }
+  }
+} 
