@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:init": "node --loader ts-node/esm lib/db/init.ts",
+    "db:init": "tsx lib/db/init.ts",
     "db:seed": "node --loader ts-node/esm lib/db/seed.ts",
     "db:test": "tsx lib/db/test-connection.ts"
   },
