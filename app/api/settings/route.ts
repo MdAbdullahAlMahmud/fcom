@@ -4,7 +4,7 @@ import { jwtVerify } from 'jose'
 import { query } from '@/lib/db/mysql'
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key'
+  process.env.JWT_SECRET || 'your-super-secret-jwt-key-2024'
 )
 
 export async function GET() {
