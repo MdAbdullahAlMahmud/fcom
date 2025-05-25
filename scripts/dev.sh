@@ -22,4 +22,8 @@ fi
 
 # Start development server
 echo -e "${BLUE}Starting development server...${NC}"
-npm run dev 
+npm run dev &
+
+# Rebuild Tailwind CSS in watch mode
+echo -e "${BLUE}Starting Tailwind CSS in watch mode...${NC}"
+npx tailwindcss -i ./app/globals.css -o ./app/tailwind-build.css --watch
