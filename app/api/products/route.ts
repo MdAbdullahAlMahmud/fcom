@@ -1,26 +1,26 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
-import { query } from '@/lib/db'
+import { query, transaction } from '@/lib/db/mysql'
 import slugify from 'slugify'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
 async function verifyAuth() {
-  const cookieStore = cookies()
-  const token = cookieStore.get('token')
-
-  if (!token) {
-    throw new Error('Not authenticated')
+    const token = cookies().get('auth-token')?.value
+  
+    if (!token) {
+      return null
+    }
+  
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET)
+      return payload
+    } catch (error) {
+      console.error('Token verification error:', error)
+      return null
+    }
   }
-
-  try {
-    const { payload } = await jwtVerify(token.value, JWT_SECRET)
-    return payload
-  } catch (error) {
-    throw new Error('Invalid token')
-  }
-}
 
 export async function GET(request: Request) {
   try {
@@ -58,11 +58,11 @@ export async function GET(request: Request) {
       `SELECT 
         p.*,
         c.name as category_name,
-        JSON_ARRAYAGG(
-          JSON_OBJECT(
-            'id', pi.id,
-            'image_url', pi.image_url,
-            'alt_text', pi.alt_text
+        GROUP_CONCAT(
+          CONCAT(
+            pi.id, ':', 
+            pi.image_url, ':', 
+            COALESCE(pi.alt_text, '')
           )
         ) as images
       FROM products p
@@ -75,8 +75,21 @@ export async function GET(request: Request) {
       [...params, limit, offset]
     )
 
+    // Transform the concatenated images string into an array of objects
+    const transformedProducts = products.map((product: any) => ({
+      ...product,
+      images: product.images ? product.images.split(',').map((img: string) => {
+        const [id, image_url, alt_text] = img.split(':')
+        return {
+          id: parseInt(id),
+          image_url,
+          alt_text: alt_text || null
+        }
+      }) : []
+    }))
+
     return NextResponse.json({
-      products,
+      products: transformedProducts,
       pagination: {
         total,
         page,
@@ -144,12 +157,9 @@ export async function POST(request: Request) {
       )
     }
 
-    // Start transaction
-    await query('START TRANSACTION')
-
-    try {
+    const result = await transaction(async (connection) => {
       // Insert product
-      const [result] = await query(
+      const [productResult] = await connection.execute(
         `INSERT INTO products (
           name, slug, description, short_description, sku,
           price, sale_price, stock_quantity, weight, dimensions,
@@ -172,7 +182,7 @@ export async function POST(request: Request) {
         ]
       )
 
-      const productId = result.insertId
+      const productId = (productResult as any).insertId
 
       // Insert images
       if (images && images.length > 0) {
@@ -184,24 +194,24 @@ export async function POST(request: Request) {
           index === 0 ? 1 : 0
         ])
 
-        await query(
+        const placeholders = imageValues.map(() => '(?, ?, ?, ?, ?)').join(', ')
+        const flatValues = imageValues.flat()
+
+        await connection.execute(
           `INSERT INTO product_images (
             product_id, image_url, alt_text, sort_order, is_primary
-          ) VALUES ?`,
-          [imageValues]
+          ) VALUES ${placeholders}`,
+          flatValues
         )
       }
 
-      await query('COMMIT')
+      return productId
+    })
 
-      return NextResponse.json({
-        message: 'Product created successfully',
-        id: productId
-      })
-    } catch (error) {
-      await query('ROLLBACK')
-      throw error
-    }
+    return NextResponse.json({
+      message: 'Product created successfully',
+      id: result
+    })
   } catch (error) {
     console.error('Error creating product:', error)
     return NextResponse.json(

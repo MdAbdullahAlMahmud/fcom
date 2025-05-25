@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
-import { query } from '@/lib/db'
+import { query, transaction } from '@/lib/db/mysql'
 import slugify from 'slugify'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
 async function verifyAuth() {
   const cookieStore = cookies()
-  const token = cookieStore.get('token')
+  const token = cookieStore.get('auth-token')
 
   if (!token) {
     throw new Error('Not authenticated')
@@ -31,11 +31,11 @@ export async function GET(
       `SELECT 
         p.*,
         c.name as category_name,
-        JSON_ARRAYAGG(
-          JSON_OBJECT(
-            'id', pi.id,
-            'image_url', pi.image_url,
-            'alt_text', pi.alt_text
+        GROUP_CONCAT(
+          CONCAT(
+            pi.id, ':', 
+            pi.image_url, ':', 
+            COALESCE(pi.alt_text, '')
           )
         ) as images
       FROM products p
@@ -53,7 +53,20 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(product)
+    // Transform the concatenated images string into an array of objects
+    const transformedProduct = {
+      ...product,
+      images: product.images ? product.images.split(',').map((img: string) => {
+        const [id, image_url, alt_text] = img.split(':')
+        return {
+          id: parseInt(id),
+          image_url,
+          alt_text: alt_text || null
+        }
+      }) : []
+    }
+
+    return NextResponse.json(transformedProduct)
   } catch (error) {
     console.error('Error fetching product:', error)
     return NextResponse.json(
@@ -117,12 +130,9 @@ export async function PUT(
       )
     }
 
-    // Start transaction
-    await query('START TRANSACTION')
-
-    try {
+    await transaction(async (connection) => {
       // Update product
-      await query(
+      await connection.execute(
         `UPDATE products SET
           name = ?,
           slug = ?,
@@ -157,7 +167,7 @@ export async function PUT(
       )
 
       // Delete existing images
-      await query('DELETE FROM product_images WHERE product_id = ?', [params.id])
+      await connection.execute('DELETE FROM product_images WHERE product_id = ?', [params.id])
 
       // Insert new images
       if (images && images.length > 0) {
@@ -169,23 +179,21 @@ export async function PUT(
           index === 0 ? 1 : 0
         ])
 
-        await query(
+        const placeholders = imageValues.map(() => '(?, ?, ?, ?, ?)').join(', ')
+        const flatValues = imageValues.flat()
+
+        await connection.execute(
           `INSERT INTO product_images (
             product_id, image_url, alt_text, sort_order, is_primary
-          ) VALUES ?`,
-          [imageValues]
+          ) VALUES ${placeholders}`,
+          flatValues
         )
       }
+    })
 
-      await query('COMMIT')
-
-      return NextResponse.json({
-        message: 'Product updated successfully'
-      })
-    } catch (error) {
-      await query('ROLLBACK')
-      throw error
-    }
+    return NextResponse.json({
+      message: 'Product updated successfully'
+    })
   } catch (error) {
     console.error('Error updating product:', error)
     return NextResponse.json(
@@ -208,25 +216,17 @@ export async function DELETE(
       )
     }
 
-    // Start transaction
-    await query('START TRANSACTION')
-
-    try {
+    await transaction(async (connection) => {
       // Delete product images
-      await query('DELETE FROM product_images WHERE product_id = ?', [params.id])
+      await connection.execute('DELETE FROM product_images WHERE product_id = ?', [params.id])
 
       // Delete product
-      await query('DELETE FROM products WHERE id = ?', [params.id])
+      await connection.execute('DELETE FROM products WHERE id = ?', [params.id])
+    })
 
-      await query('COMMIT')
-
-      return NextResponse.json({
-        message: 'Product deleted successfully'
-      })
-    } catch (error) {
-      await query('ROLLBACK')
-      throw error
-    }
+    return NextResponse.json({
+      message: 'Product deleted successfully'
+    })
   } catch (error) {
     console.error('Error deleting product:', error)
     return NextResponse.json(
