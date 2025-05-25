@@ -1,4 +1,4 @@
-import { query } from '../lib/db/mysql'
+import { query } from '../../lib/db/mysql'
 import { hash } from 'bcrypt'
 
 async function createAdminUser() {
@@ -9,14 +9,13 @@ async function createAdminUser() {
 
     // Insert admin user
     await query(`
-      INSERT INTO users (username, password, email, role, status)
-      VALUES (?, ?, ?, 'admin', 'active')
+      INSERT INTO users (name, email, password, role)
+      VALUES (?, ?, ?, 'admin')
       ON DUPLICATE KEY UPDATE
       password = VALUES(password),
       email = VALUES(email),
-      role = VALUES(role),
-      status = VALUES(status)
-    `, ['admin', hashedPassword, 'admin@example.com'])
+      role = VALUES(role)
+    `, ['Admin User', 'admin@example.com', hashedPassword])
 
     console.log('Admin user created successfully')
     console.log('Email: admin@example.com')
