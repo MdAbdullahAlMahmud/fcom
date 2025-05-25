@@ -105,9 +105,6 @@ export default function OrdersPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Orders</h1>
         <div className="flex items-center gap-4">
-          <Button onClick={() => router.push('/admin/orders/create')}>
-            Create Order
-          </Button>
           <Select
             value={statusFilter}
             onValueChange={(value) => {
