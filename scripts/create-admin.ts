@@ -1,0 +1,35 @@
+import { query } from '../lib/db/mysql'
+import { hash } from 'bcrypt'
+
+async function createAdminUser() {
+  try {
+    // Hash the password
+    const password = 'admin123'
+    const hashedPassword = await hash(password, 10)
+
+    // Insert admin user
+    await query(`
+      INSERT INTO users (username, password, email, role, status)
+      VALUES (?, ?, ?, 'admin', 'active')
+      ON DUPLICATE KEY UPDATE
+      password = VALUES(password),
+      email = VALUES(email),
+      role = VALUES(role),
+      status = VALUES(status)
+    `, ['admin', hashedPassword, 'admin@example.com'])
+
+    console.log('Admin user created successfully')
+    console.log('Email: admin@example.com')
+    console.log('Password: admin123')
+  } catch (error) {
+    console.error('Error creating admin user:', error)
+  }
+}
+
+// Run the script
+createAdminUser()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error)
+    process.exit(1)
+  }) 
