@@ -154,7 +154,7 @@ export default function EditProductPage({
       }
 
       toast.success('Product updated successfully')
-      router.push('/admin/products')
+      router.push('/admin/products/listing')
     } catch (error) {
       console.error('Error updating product:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to update product')

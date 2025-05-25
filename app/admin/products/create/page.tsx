@@ -50,7 +50,9 @@ export default function CreateProductPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/categories')
+      const response = await fetch('/api/categories', {
+        credentials: 'include'
+      })
       if (!response.ok) throw new Error('Failed to fetch categories')
       const data = await response.json()
       setCategories(data)
@@ -79,7 +81,8 @@ export default function CreateProductPage() {
       try {
         const response = await fetch('/api/upload', {
           method: 'POST',
-          body: formData
+          body: formData,
+          credentials: 'include'
         })
 
         if (!response.ok) {
