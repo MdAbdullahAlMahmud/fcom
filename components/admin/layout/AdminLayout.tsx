@@ -241,8 +241,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild href="/admin/customers/details" isActive={isActive('/admin/customers/details')}>
-                          <Link href="/admin/customers/details">Customer Details</Link>
+                        <SidebarMenuSubButton asChild href="/customers/create" isActive={isActive('/customers/create')}>
+                          <Link href="/customers/create">Add Customer</Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
