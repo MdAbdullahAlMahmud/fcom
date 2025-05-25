@@ -7,8 +7,9 @@ import type { User } from '@/types/database'
 
 // Ensure we have a valid JWT secret
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-super-secret-jwt-key-2024'
+  process.env.JWT_SECRET ?? 'your-super-secret-jwt-key-2024'
 )
+
 
 export async function POST(request: Request) {
   try {
