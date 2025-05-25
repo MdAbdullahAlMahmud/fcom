@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Activity, CreditCard, DollarSign, Users } from "lucide-react"
+import { Activity, CreditCard, DollarSign, Users, TrendingUp, ShoppingBag } from "lucide-react"
 
-export default function AdminDashboardPage() {
+export default function DashboardOverviewPage() {
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -50,12 +50,11 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Overview</CardTitle>
+            <CardTitle>Revenue Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Add your chart component here */}
             <div className="h-[200px] flex items-center justify-center border rounded-lg">
-              <p className="text-muted-foreground">Chart will be displayed here</p>
+              <p className="text-muted-foreground">Revenue chart will be displayed here</p>
             </div>
           </CardContent>
         </Card>
@@ -80,4 +79,4 @@ export default function AdminDashboardPage() {
       </div>
     </div>
   )
-}
+} 
