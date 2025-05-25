@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key')
+// Ensure we have a valid JWT secret
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-super-secret-jwt-key-2024'
+)
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value
@@ -29,6 +32,7 @@ export async function middleware(request: NextRequest) {
 
       return NextResponse.next()
     } catch (error) {
+      console.error('Token verification error:', error)
       // Clear invalid token
       const response = NextResponse.redirect(new URL('/auth/login', request.url))
       response.cookies.delete('auth-token')

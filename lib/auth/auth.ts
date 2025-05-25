@@ -4,7 +4,7 @@ import { User, UserRole, LoginCredentials, RegisterData, AuthResponse, AuthError
 import { db } from '@/lib/db'
 import { hash, compare } from 'bcrypt'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key')
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-super-secret-jwt-key-2024')
 
 export async function hashPassword(password: string): Promise<string> {
   return hash(password, 12)

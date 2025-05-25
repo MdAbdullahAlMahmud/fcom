@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Plus, Pencil, Trash2, ArrowUpDown, Search } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface Category {
   id: number
@@ -46,6 +47,7 @@ type SortField = 'name' | 'created_at'
 type SortOrder = 'asc' | 'desc'
 
 export default function CategoriesPage() {
+  const router = useRouter()
   const { toast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([])
@@ -68,7 +70,9 @@ export default function CategoriesPage() {
 
   async function fetchCategories() {
     try {
-      const response = await fetch('/api/categories')
+      const response = await fetch('/api/categories', {
+        credentials: 'include',
+      })
       const data = await response.json()
       setCategories(data)
     } catch (error) {
@@ -130,19 +134,22 @@ export default function CategoriesPage() {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       })
 
       if (!response.ok) {
-        throw new Error('Failed to upload image')
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to upload image')
       }
 
       const data = await response.json()
       return data.url
     } catch (error) {
+      console.error('Upload error:', error)
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to upload image",
+        title: "Upload Error",
+        description: error instanceof Error ? error.message : 'Failed to upload image',
       })
       return null
     }
@@ -150,22 +157,18 @@ export default function CategoriesPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    const data = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string,
-      parent_id: formData.get('parent_id') ? Number(formData.get('parent_id')) : null,
-      image_url: formData.get('image_url') as string,
-      is_active: formData.get('is_active') === 'true',
-    }
+    setIsLoading(true)
 
     try {
-      // Upload image if selected
+      const formData = new FormData(event.currentTarget)
+      const name = formData.get('name') as string
+      const description = formData.get('description') as string
+      const parent_id = formData.get('parent_id') as string
+      const is_active = formData.get('is_active') === 'true'
+
+      let image_url = null
       if (selectedImage) {
-        const imageUrl = await uploadImage()
-        if (imageUrl) {
-          data.image_url = imageUrl
-        }
+        image_url = await uploadImage()
       }
 
       const url = editingCategory
@@ -175,12 +178,22 @@ export default function CategoriesPage() {
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name,
+          description: description || null,
+          parent_id: parent_id === 'none' ? null : parseInt(parent_id),
+          is_active,
+          image_url
+        }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to save category')
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to save category')
       }
 
       toast({
@@ -193,12 +206,16 @@ export default function CategoriesPage() {
       setSelectedImage(null)
       setImagePreview(null)
       fetchCategories()
+      router.refresh()
     } catch (error) {
+      console.error('Save error:', error)
       toast({
         variant: "destructive",
         title: "Error",
         description: error instanceof Error ? error.message : 'An error occurred',
       })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -210,6 +227,7 @@ export default function CategoriesPage() {
     try {
       const response = await fetch(`/api/categories/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -345,8 +363,8 @@ export default function CategoriesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">
-                  {editingCategory ? 'Update' : 'Create'} Category
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Saving..." : "Save"}
                 </Button>
               </DialogFooter>
             </form>
