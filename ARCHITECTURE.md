@@ -161,3 +161,51 @@ fcommerce/
 - Problem: Form values as strings
 - Solution: Convert types appropriately
 - Example: `parent_id === 'none' ? null : parseInt(parent_id)` 
+
+## Database Schema
+All database schemas are centralized in the `db_schemas` directory. This includes:
+
+- `01_users.sql`: User authentication and management
+- `02_categories.sql`: Product categories and hierarchy
+- `03_products.sql`: Product information and inventory
+- `04_product_images.sql`: Product image management
+- `05_settings.sql`: Site settings and configuration
+
+### Table Configuration
+TypeScript files for table creation and initial data setup are stored in `db_schemas/table_config`:
+
+- `create-admin.ts`: Creates the initial admin user
+- `create-categories-table.ts`: Creates the categories table
+- `create-settings-table.ts`: Creates the settings table
+
+These files use the SQL schemas from the parent directory and handle:
+- Table creation
+- Initial data setup
+- Data migrations
+- Admin user creation
+
+### Schema Setup
+To set up the database:
+
+1. Navigate to the `db_schemas` directory
+2. Run the setup script:
+   ```bash
+   ./setup.sh
+   ```
+
+The script will:
+- Create the database if it doesn't exist
+- Execute all schema files in order
+- Set up all required tables and relationships
+
+### Schema Rules
+1. All schema files should be prefixed with a number (e.g., `01_`, `02_`) to ensure proper execution order
+2. Each table should include:
+   - `created_at` and `updated_at` timestamps
+   - Appropriate foreign key constraints
+   - Proper indexing
+3. Use `IF NOT EXISTS` to prevent errors on re-runs
+4. Include appropriate comments for complex fields or relationships
+5. All database schemas should be maintained in the `db_schemas` directory
+6. Do not store schema files in other directories (e.g., `api/schema` or `scripts`)
+7. Table configuration files should be stored in `db_schemas/table_config` 
