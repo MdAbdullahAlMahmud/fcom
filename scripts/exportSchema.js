@@ -1,4 +1,5 @@
 // scripts/exportSchema.js
+// node scripts/exportSchema.js
 import mysql from 'mysql2/promise';
 import fs from 'fs';
 import path from 'path';

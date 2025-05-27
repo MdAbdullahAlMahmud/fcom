@@ -19,6 +19,26 @@
 | created_at | timestamp | NO |  | current_timestamp() |  |
 | updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
 
+## Table: `cart_items`
+
+| Column | Type | Null | Key | Default | Extra |
+|--------|------|------|-----|---------|-------|
+| id | int(11) | NO | PRI |  | auto_increment |
+| cart_id | int(11) | NO | MUL |  |  |
+| product_id | int(11) | NO | MUL |  |  |
+| quantity | int(11) | NO |  |  |  |
+| created_at | timestamp | NO |  | current_timestamp() |  |
+| updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
+
+## Table: `carts`
+
+| Column | Type | Null | Key | Default | Extra |
+|--------|------|------|-----|---------|-------|
+| id | int(11) | NO | PRI |  | auto_increment |
+| user_id | int(11) | YES | MUL |  |  |
+| created_at | timestamp | NO |  | current_timestamp() |  |
+| updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
+
 ## Table: `categories`
 
 | Column | Type | Null | Key | Default | Extra |
@@ -30,42 +50,6 @@
 | parent_id | int(11) | YES | MUL |  |  |
 | image_url | varchar(255) | YES |  |  |  |
 | is_active | tinyint(1) | YES |  | 1 |  |
-| created_at | timestamp | NO |  | current_timestamp() |  |
-| updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
-
-## Table: `customers`
-
-| Column | Type | Null | Key | Default | Extra |
-|--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
-| name | varchar(255) | NO |  |  |  |
-| email | varchar(255) | NO | UNI |  |  |
-| phone | varchar(20) | YES |  |  |  |
-| password | varchar(255) | YES |  |  |  |
-| created_at | timestamp | NO |  | current_timestamp() |  |
-| updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
-
-## Table: `guest_order_items`
-
-| Column | Type | Null | Key | Default | Extra |
-|--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
-| guest_order_id | int(11) | NO | MUL |  |  |
-| product_id | int(11) | NO | MUL |  |  |
-| quantity | int(11) | NO |  |  |  |
-| price | decimal(10,2) | NO |  |  |  |
-| created_at | timestamp | NO |  | current_timestamp() |  |
-
-## Table: `guest_orders`
-
-| Column | Type | Null | Key | Default | Extra |
-|--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
-| name | varchar(255) | NO |  |  |  |
-| email | varchar(255) | NO |  |  |  |
-| phone | varchar(20) | NO |  |  |  |
-| total_amount | decimal(10,2) | NO |  |  |  |
-| status | enum('pending','processing','shipped','delivered','cancelled') | YES |  | pending |  |
 | created_at | timestamp | NO |  | current_timestamp() |  |
 | updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
 
@@ -100,6 +84,7 @@
 | id | int(11) | NO | PRI |  | auto_increment |
 | user_id | int(11) | NO | MUL |  |  |
 | order_number | varchar(50) | NO | UNI |  |  |
+| tracking_id | varchar(50) | YES |  |  |  |
 | status | enum('pending','processing','shipped','delivered','cancelled','refunded') | NO |  | pending |  |
 | total_amount | decimal(10,2) | NO |  |  |  |
 | shipping_fee | decimal(10,2) | NO |  | 0.00 |  |
@@ -114,7 +99,6 @@
 | estimated_delivery_date | date | YES |  |  |  |
 | created_at | timestamp | NO |  | current_timestamp() |  |
 | updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
-| customer_id | int(11) | YES | MUL |  |  |
 
 ## Table: `product_attribute_values`
 
