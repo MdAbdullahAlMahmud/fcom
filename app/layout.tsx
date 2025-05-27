@@ -3,12 +3,13 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import "./tailwind-build.css"
 import { Toaster } from 'sonner'
+import { CartProvider } from '@/contexts/CartContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'fCommerce',
-  description: 'Modern e-commerce platform',
+  title: 'Fashion Commerce',
+  description: 'Your one-stop shop for fashion',
 }
 
 export default function RootLayout({
@@ -19,7 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {children}
+        <CartProvider>
+          {children}
+        </CartProvider>
         <Toaster />
       </body>
     </html>
