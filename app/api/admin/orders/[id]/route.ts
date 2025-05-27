@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
 import { query } from '@/lib/db/mysql'
 import { Order, OrderStatus } from '@/types/order'
+import { logger } from '@/lib/logger'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
@@ -127,6 +128,7 @@ export async function PATCH(
   try {
     const payload = await verifyAuth()
     if (!payload || payload.role !== 'admin') {
+      logger.warn('Unauthorized attempt to update order', { orderId: params.id })
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 403 }
@@ -136,8 +138,17 @@ export async function PATCH(
     const body = await request.json()
     const { status, notes, tracking_number, estimated_delivery_date } = body
 
+    logger.debug('Updating order', {
+      orderId: params.id,
+      status,
+      notes,
+      tracking_number,
+      estimated_delivery_date
+    })
+
     // Validate status if provided
     if (status && !['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'].includes(status)) {
+      logger.warn('Invalid status provided', { status })
       return NextResponse.json(
         { message: 'Invalid status' },
         { status: 400 }
@@ -145,7 +156,7 @@ export async function PATCH(
     }
 
     // Update order
-    await query(
+    const updateResult = await query(
       `UPDATE orders SET
         status = COALESCE(?, status),
         tracking_number = ?,
@@ -153,16 +164,18 @@ export async function PATCH(
         updated_at = NOW()
       WHERE id = ?`,
       [
-        status ?? null,
-        tracking_number ?? null,
-        estimated_delivery_date ?? null,
+        status || null,
+        tracking_number || null,
+        estimated_delivery_date || null,
         params.id
       ]
     )
 
-    // Add status history only if status is provided
+    logger.debug('Order update result', { updateResult })
+
+    // Add status history if status is provided
     if (status) {
-      await query(
+      const historyResult = await query(
         `INSERT INTO order_status_history (
           order_id,
           status,
@@ -170,15 +183,17 @@ export async function PATCH(
           created_by,
           created_at
         ) VALUES (?, ?, ?, ?, NOW())`,
-        [params.id, status, notes ?? null, payload.id]
+        [params.id, status, notes || null, payload.sub]
       )
+
+      logger.debug('Status history update result', { historyResult })
     }
 
     return NextResponse.json({
       message: 'Order updated successfully'
     })
   } catch (error) {
-    console.error('Error updating order:', error)
+    logger.error('Error updating order', error)
     return NextResponse.json(
       { message: 'Failed to update order' },
       { status: 500 }

@@ -18,8 +18,33 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { Order, OrderStatus } from '@/types/order'
+import { logger } from '@/lib/logger'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 export default function OrderStatusPage() {
   const router = useRouter()
@@ -29,25 +54,50 @@ export default function OrderStatusPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [notes, setNotes] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [itemsPerPage] = useState(10)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     fetchOrders()
-  }, [])
+  }, [currentPage, statusFilter])
 
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/orders', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth-token')}`
-        }
+      logger.debug('Fetching orders', {
+        page: currentPage,
+        itemsPerPage,
+        statusFilter
       })
+
+      const response = await fetch(
+        `/api/admin/orders?page=${currentPage}&limit=${itemsPerPage}${
+          statusFilter !== 'all' ? `&status=${statusFilter}` : ''
+        }`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth-token')}`
+          }
+        }
+      )
       if (!response.ok) {
-        throw new Error('Failed to fetch orders')
+        const errorData = await response.json()
+        logger.error('Failed to fetch orders', errorData)
+        throw new Error(errorData.message || 'Failed to fetch orders')
       }
       const data = await response.json()
       setOrders(data.orders)
+      setTotalPages(data.pagination.totalPages)
+      logger.info('Orders fetched successfully', {
+        count: data.orders.length,
+        totalPages: data.pagination.totalPages
+      })
     } catch (error) {
+      logger.error('Error fetching orders', error)
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setLoading(false)
@@ -57,6 +107,12 @@ export default function OrderStatusPage() {
   const handleStatusChange = async (orderId: number, status: OrderStatus) => {
     try {
       setUpdatingStatus(true)
+      logger.debug('Updating order status', {
+        orderId,
+        status,
+        notes: notes || null
+      })
+
       const response = await fetch(`/api/admin/orders/${orderId}`, {
         method: 'PATCH',
         headers: {
@@ -65,18 +121,28 @@ export default function OrderStatusPage() {
         },
         body: JSON.stringify({
           status,
-          notes,
+          notes: notes || null,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update order status')
+        const errorData = await response.json()
+        logger.error('Failed to update order status', errorData)
+        throw new Error(errorData.message || 'Failed to update order status')
       }
 
+      logger.info('Order status updated successfully', {
+        orderId,
+        status,
+        notes: notes || null
+      })
+
       await fetchOrders()
+      setIsModalOpen(false)
       setSelectedOrder(null)
       setNotes('')
     } catch (error) {
+      logger.error('Error updating order status', error)
       setError(error instanceof Error ? error.message : 'Failed to update status')
     } finally {
       setUpdatingStatus(false)
@@ -101,6 +167,15 @@ export default function OrderStatusPage() {
         return 'bg-gray-100 text-gray-800'
     }
   }
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = 
+      order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (order.user_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (order.user_email?.toLowerCase().includes(searchQuery.toLowerCase()))
+    
+    return matchesSearch
+  })
 
   if (loading) {
     return (
@@ -131,91 +206,170 @@ export default function OrderStatusPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Orders Needing Status Update</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedOrder(order)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Order #{order.order_number}</h3>
-                      <p className="text-sm text-gray-500">
-                        {formatDate(order.created_at)}
-                      </p>
-                    </div>
-                    <Badge className={getStatusColor(order.status)}>
-                      {order.status}
-                    </Badge>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-sm">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col space-y-4">
+            <CardTitle>Orders</CardTitle>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Input
+                placeholder="Search by order number, name, or email"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1"
+              />
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  setStatusFilter(value as OrderStatus | 'all')
+                  setCurrentPage(1)
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">
+                      #{order.order_number}
+                    </TableCell>
+                    <TableCell>
                       {order.user_name || 'Guest'}
                       {order.user_email && (
-                        <span className="text-gray-500 ml-2">
-                          ({order.user_email})
-                        </span>
+                        <div className="text-sm text-gray-500">
+                          {order.user_email}
+                        </div>
                       )}
-                    </p>
-                    <p className="text-sm font-medium mt-1">
-                      {formatCurrency(order.total_amount)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                    </TableCell>
+                    <TableCell>{formatDate(order.created_at)}</TableCell>
+                    <TableCell>{formatCurrency(order.total_amount)}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(order.status)}>
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedOrder(order)
+                          setNotes('')
+                          setIsModalOpen(true)
+                        }}
+                      >
+                        Update Status
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-        {selectedOrder && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Update Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Status</label>
-                  <Select
-                    value={selectedOrder.status}
-                    onValueChange={(value) => handleStatusChange(selectedOrder.id, value as OrderStatus)}
-                    disabled={updatingStatus}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="refunded">Refunded</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Notes</label>
-                  <Textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add notes about this status change"
-                    disabled={updatingStatus}
+          <div className="mt-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
                   />
-                </div>
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(page)}
+                      isActive={currentPage === page}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </CardContent>
+      </Card>
 
-                <div className="space-y-2">
-                  <h4 className="font-medium">Status History</h4>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Order Status</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Status</label>
+                <Select
+                  value={selectedOrder.status}
+                  onValueChange={(value) => {
+                    const newStatus = value as OrderStatus
+                    handleStatusChange(selectedOrder.id, newStatus)
+                  }}
+                  disabled={updatingStatus}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Notes</label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add notes about this status change"
+                  disabled={updatingStatus}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Status History</h4>
+                <div className="max-h-[200px] overflow-y-auto space-y-2">
                   {selectedOrder.statusHistory?.map((history) => (
-                    <div key={history.id} className="border-b pb-2 last:border-0">
+                    <div key={history.id} className="border rounded-lg p-3">
                       <div className="flex justify-between items-start">
                         <div>
                           <Badge className={getStatusColor(history.status)}>
@@ -236,10 +390,19 @@ export default function OrderStatusPage() {
                   ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsModalOpen(false)}
+              disabled={updatingStatus}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
