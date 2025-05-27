@@ -15,18 +15,24 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { X } from 'lucide-react'
 
 interface Category {
   id: number
   name: string
 }
 
+interface ImagePreview {
+  id: string
+  url: string
+  file?: File
+}
+
 export default function CreateProductPage() {
   const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedImages, setSelectedImages] = useState<File[]>([])
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([])
 
   // Form state
   const [formData, setFormData] = useState({
@@ -62,21 +68,44 @@ export default function CreateProductPage() {
     }
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    setSelectedImages(files)
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-    // Create preview URLs
-    const urls = files.map(file => URL.createObjectURL(file))
-    setPreviewUrls(urls)
+    // Check if we already have an image at this index
+    const newImages = [...selectedImages]
+    if (newImages[index]) {
+      // Replace existing image
+      newImages[index] = {
+        id: `preview-${Date.now()}`,
+        url: URL.createObjectURL(file),
+        file
+      }
+    } else {
+      // Add new image
+      newImages[index] = {
+        id: `preview-${Date.now()}`,
+        url: URL.createObjectURL(file),
+        file
+      }
+    }
+    setSelectedImages(newImages)
+  }
+
+  const removeImage = (index: number) => {
+    const newImages = [...selectedImages]
+    newImages.splice(index, 1)
+    setSelectedImages(newImages)
   }
 
   const uploadImages = async () => {
     const uploadedUrls: string[] = []
     
     for (const image of selectedImages) {
+      if (!image.file) continue
+
       const formData = new FormData()
-      formData.append('file', image)
+      formData.append('file', image.file)
 
       try {
         const response = await fetch('/api/upload', {
@@ -131,7 +160,7 @@ export default function CreateProductPage() {
       }
 
       toast.success('Product created successfully')
-      router.push('/admin/products')
+      router.push('/admin/products/listing')
     } catch (error) {
       console.error('Error creating product:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create product')
@@ -264,28 +293,47 @@ export default function CreateProductPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Label>Product Images</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-            />
-            {previewUrls.length > 0 && (
-              <div className="grid grid-cols-4 gap-4 mt-4">
-                {previewUrls.map((url, index) => (
-                  <div key={index} className="relative aspect-square">
-                    <Image
-                      src={url}
-                      alt={`Preview ${index + 1}`}
-                      fill
-                      className="object-cover rounded-md"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-4 gap-4">
+              {[0, 1, 2, 3].map((index) => (
+                <div
+                  key={index}
+                  className="relative aspect-square border-2 border-dashed border-gray-300 rounded-lg overflow-hidden group"
+                >
+                  {selectedImages[index] ? (
+                    <>
+                      <Image
+                        src={selectedImages[index].url}
+                        alt={`Product image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                      <div className="text-gray-400 text-sm mb-2">Click to upload</div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageChange(e, index)}
+                      />
+                    </label>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-gray-500">
+              Upload up to 4 product images. Click on an image to remove it.
+            </p>
           </div>
 
           <div className="flex justify-end space-x-4">

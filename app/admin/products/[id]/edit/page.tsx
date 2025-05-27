@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { X } from 'lucide-react'
 
 interface Category {
   id: number
@@ -48,8 +49,7 @@ export default function EditProductPage({
   const [categories, setCategories] = useState<Category[]>([])
   const [product, setProduct] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedImages, setSelectedImages] = useState<File[]>([])
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([])
 
   useEffect(() => {
     fetchCategories()
@@ -82,54 +82,76 @@ export default function EditProductPage({
     }
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    setSelectedImages(files)
+  // Helper for image preview
+  interface ImagePreview {
+    id: string
+    url: string
+    file?: File
+  }
 
-    // Create preview URLs
-    const urls = files.map(file => URL.createObjectURL(file))
-    setPreviewUrls(urls)
+  // When product is loaded, set initial images
+  useEffect(() => {
+    if (product) {
+      const previews: ImagePreview[] = (product.images || []).slice(0, 4).map((img, idx) => ({
+        id: `existing-${img.id}`,
+        url: img.image_url
+      }))
+      setSelectedImages(previews)
+    }
+  }, [product])
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const newImages = [...selectedImages]
+    newImages[index] = {
+      id: `preview-${Date.now()}`,
+      url: URL.createObjectURL(file),
+      file
+    }
+    setSelectedImages(newImages)
+  }
+
+  const removeImage = (index: number) => {
+    const newImages = [...selectedImages]
+    newImages.splice(index, 1)
+    setSelectedImages(newImages)
   }
 
   const uploadImages = async () => {
     const uploadedUrls: string[] = []
-    
     for (const image of selectedImages) {
-      const formData = new FormData()
-      formData.append('file', image)
-
-      try {
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include'
-        })
-
-        if (!response.ok) {
+      if (image.url && !image.file) {
+        // Existing image, keep its URL
+        uploadedUrls.push(image.url)
+      } else if (image.file) {
+        const formData = new FormData()
+        formData.append('file', image.file)
+        try {
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          })
+          if (!response.ok) throw new Error('Failed to upload image')
+          const data = await response.json()
+          uploadedUrls.push(data.url)
+        } catch (error) {
+          console.error('Error uploading image:', error)
           throw new Error('Failed to upload image')
         }
-
-        const data = await response.json()
-        uploadedUrls.push(data.url)
-      } catch (error) {
-        console.error('Error uploading image:', error)
-        throw new Error('Failed to upload image')
       }
     }
-
     return uploadedUrls
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!product) return
-
     setIsLoading(true)
-
     try {
       // Upload new images if any
-      const newImageUrls = await uploadImages()
-
+      const imageUrls = await uploadImages()
       // Update product
       const response = await fetch(`/api/products/${params.id}`, {
         method: 'PUT',
@@ -138,7 +160,7 @@ export default function EditProductPage({
         },
         body: JSON.stringify({
           ...product,
-          images: [...product.images.map(img => img.image_url), ...newImageUrls],
+          images: imageUrls,
           price: parseFloat(product.price.toString()),
           sale_price: product.sale_price ? parseFloat(product.sale_price.toString()) : null,
           stock_quantity: parseInt(product.stock_quantity.toString()),
@@ -147,12 +169,10 @@ export default function EditProductPage({
         }),
         credentials: 'include'
       })
-
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.message || 'Failed to update product')
       }
-
       toast.success('Product updated successfully')
       router.push('/admin/products/listing')
     } catch (error) {
@@ -295,51 +315,54 @@ export default function EditProductPage({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Current Images</Label>
+          <div className="space-y-4">
+            <Label>Product Images</Label>
             <div className="grid grid-cols-4 gap-4">
-              {product.images.map((image) => (
-                <div key={image.id} className="relative aspect-square">
-                  <Image
-                    src={image.image_url}
-                    alt={image.alt_text || product.name}
-                    fill
-                    className="object-cover rounded-md"
-                  />
+              {[0, 1, 2, 3].map((index) => (
+                <div
+                  key={index}
+                  className="relative aspect-square border-2 border-dashed border-gray-300 rounded-lg overflow-hidden group"
+                >
+                  {selectedImages[index] ? (
+                    <>
+                      <Image
+                        src={selectedImages[index].url}
+                        alt={`Product image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                      <div className="text-gray-400 text-sm mb-2">Click to upload</div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageChange(e, index)}
+                      />
+                    </label>
+                  )}
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Add New Images</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-            />
-            {previewUrls.length > 0 && (
-              <div className="grid grid-cols-4 gap-4 mt-4">
-                {previewUrls.map((url, index) => (
-                  <div key={index} className="relative aspect-square">
-                    <Image
-                      src={url}
-                      alt={`Preview ${index + 1}`}
-                      fill
-                      className="object-cover rounded-md"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            <p className="text-sm text-gray-500">
+              Upload up to 4 product images. Click on an image to remove it.
+            </p>
           </div>
 
           <div className="flex justify-end space-x-4">
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push('/admin/products')}
+              onClick={() => router.push('/admin/products/listing')}
             >
               Cancel
             </Button>
