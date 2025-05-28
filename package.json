@@ -10,9 +10,9 @@
     "lint": "next lint",
     "db:test": "tsx lib/db/test-connection.ts",
     "db:init": "tsx lib/db/init.ts",
-    "setup": "chmod +x scripts/*.sh && ./scripts/setup.sh",
-    "dev:script": "chmod +x scripts/*.sh && ./scripts/dev.sh",
-    "build:script": "chmod +x scripts/*.sh && ./scripts/build.sh"
+    "setup": "scripts\\setup.bat",
+    "dev:script": "scripts\\dev.bat",
+    "build:script": "scripts\\build.bat"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
