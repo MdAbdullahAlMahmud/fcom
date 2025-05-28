@@ -3,16 +3,22 @@
 import { useCart } from '@/contexts/CartContext'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'react-hot-toast'
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
+    full_name: '',
     email: '',
     phone: '',
-    address: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: 'Bangladesh'
   })
 
   if (items.length === 0) {
@@ -30,41 +36,149 @@ export default function CheckoutPage() {
     )
   }
 
+  const validateForm = () => {
+    console.log('Validating form data:', formData)
+    
+    if (!formData.full_name.trim()) {
+      console.log('Validation failed: Full name is empty')
+      toast.error('Full name is required')
+      return false
+    }
+    if (!formData.phone.trim()) {
+      console.log('Validation failed: Phone is empty')
+      toast.error('Phone number is required')
+      return false
+    }
+    if (!/^01[3-9]\d{6,8}$/.test(formData.phone)) {
+      console.log('Validation failed: Invalid phone format:', formData.phone)
+      const currentLength = formData.phone.length
+      if (currentLength < 10) {
+        toast.error(`Phone number must be at least 10 digits. Current length: ${currentLength}`)
+      } else if (currentLength > 11) {
+        toast.error(`Phone number must not exceed 11 digits. Current length: ${currentLength}`)
+      } else {
+        toast.error('Please enter a valid Bangladeshi phone number starting with 01 followed by 3-9')
+      }
+      return false
+    }
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      console.log('Validation failed: Invalid email format:', formData.email)
+      toast.error('Please enter a valid email address')
+      return false
+    }
+    if (!formData.address_line1.trim()) {
+      console.log('Validation failed: Address line 1 is empty')
+      toast.error('Address line 1 is required')
+      return false
+    }
+    if (!formData.city.trim()) {
+      console.log('Validation failed: City is empty')
+      toast.error('City is required')
+      return false
+    }
+    if (!formData.state.trim()) {
+      console.log('Validation failed: State is empty')
+      toast.error('State/Province is required')
+      return false
+    }
+    if (!formData.postal_code.trim()) {
+      console.log('Validation failed: Postal code is empty')
+      toast.error('Postal code is required')
+      return false
+    }
+    
+    console.log('Form validation passed')
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    console.log('Form submission started')
+    console.log('Current form data:', formData)
+    
+    if (!validateForm()) {
+      console.log('Form validation failed - stopping submission')
+      return
+    }
 
+    if (items.length === 0) {
+      console.log('No items in cart - stopping submission')
+      toast.error('Your cart is empty')
+      return
+    }
+
+    setIsSubmitting(true)
+    console.log('Form data:', formData)
+    console.log('Cart items:', items)
+    
     try {
+      // Format the address as expected by the API
+      const formattedAddress = [
+        formData.address_line1,
+        [
+          formData.address_line2,
+          formData.city,
+          formData.state,
+          formData.postal_code
+        ].filter(Boolean).join(', ')
+      ].filter(Boolean).join('\n')
+
+      const requestData = {
+        items: items.map(item => ({
+          id: item.id,
+          quantity: item.quantity,
+          price: item.sale_price || item.price
+        })),
+        total,
+        customer: {
+          name: formData.full_name,
+          email: formData.email || `${formData.phone}@temp.com`,
+          phone: formData.phone,
+          address: formattedAddress
+        }
+      }
+      
+      console.log('Sending request with data:', requestData)
+
       const response = await fetch('/api/frontend/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          items,
-          total,
-          customer: formData,
-        }),
+        body: JSON.stringify(requestData),
       })
 
+      console.log('Response status:', response.status)
+      const responseData = await response.json()
+      console.log('Response data:', responseData)
+
       if (!response.ok) {
-        throw new Error('Failed to create order')
+        throw new Error(responseData.message || 'Failed to create order')
       }
 
-      const { orderId, orderNumber } = await response.json()
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Failed to create order')
+      }
+
+      const { orderNumber, trackingNumber } = responseData
       clearCart()
-      router.push(`/checkout/success/${orderNumber}`)
+      router.push(`/order/success?orderNumber=${orderNumber}&trackingNumber=${trackingNumber}`)
     } catch (error) {
       console.error('Error creating order:', error)
-      alert('Failed to create order. Please try again.')
+      toast.error(error instanceof Error ? error.message : 'Failed to create order. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    console.log('Form field changed:', name, value)
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value }
+      console.log('Updated form data:', newData)
+      return newData
+    })
   }
 
   return (
@@ -75,68 +189,153 @@ export default function CheckoutPage() {
         {/* Order Form */}
         <div>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="name"
-                required
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Personal Information</h3>
+              <div>
+                <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  id="full_name"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="01XXXXXXXXX"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email (Optional)
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
+            {/* Address Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Address Details</h3>
+              <div>
+                <label htmlFor="address_line1" className="block text-sm font-medium text-gray-700">
+                  Address Line 1 *
+                </label>
+                <input
+                  type="text"
+                  id="address_line1"
+                  name="address_line1"
+                  value={formData.address_line1}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="address_line2" className="block text-sm font-medium text-gray-700">
+                  Address Line 2 (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="address_line2"
+                  name="address_line2"
+                  value={formData.address_line2}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+                    State/Province *
+                  </label>
+                  <input
+                    type="text"
+                    id="state"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                required
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Delivery Address
-              </label>
-              <textarea
-                name="address"
-                required
-                value={formData.address}
-                onChange={handleChange}
-                rows={4}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
+            {/* Location Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Location Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="postal_code" className="block text-sm font-medium text-gray-700">
+                    Postal Code *
+                  </label>
+                  <input
+                    type="text"
+                    id="postal_code"
+                    name="postal_code"
+                    value={formData.postal_code}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    id="country"
+                    name="country"
+                    value={formData.country}
+                    disabled
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2"
+                  />
+                </div>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full bg-black text-white px-8 py-3 rounded-full transition-colors ${
-                isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-800'
-              }`}
+              className="w-full bg-black text-white px-8 py-3 rounded-full transition-colors hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Processing...' : 'Place Order'}
             </button>
