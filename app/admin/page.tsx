@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -86,9 +85,18 @@ interface PerformanceMetrics {
   siteSpeed: number
 }
 
-export default function DashboardOverviewPage() {
+export default function DashboardPage() {
   const [date, setDate] = useState<Date>(new Date())
-  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [stats, setStats] = useState<DashboardStats>({
+    totalOrders: 0,
+    totalRevenue: 0,
+    totalCustomers: 0,
+    conversionRate: 0,
+    ordersChange: 0,
+    revenueChange: 0,
+    customersChange: 0,
+    conversionChange: 0
+  })
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
   const [topProducts, setTopProducts] = useState<TopProduct[]>([])
   const [categorySales, setCategorySales] = useState<CategorySales[]>([])
@@ -105,34 +113,73 @@ export default function DashboardOverviewPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const [statsRes, ordersRes, productsRes, categoriesRes, customersRes, performanceRes] = await Promise.all([
-        fetch('/api/admin/dashboard/stats'),
-        fetch('/api/admin/dashboard/recent-orders'),
-        fetch('/api/admin/dashboard/top-products'),
-        fetch('/api/admin/dashboard/category-sales'),
-        fetch('/api/admin/dashboard/customer-insights'),
-        fetch('/api/admin/dashboard/performance')
-      ])
+      setIsLoading(true)
+      // Fetch orders
+      const ordersRes = await fetch('/api/admin/orders')
+      const ordersData = await ordersRes.json()
+      
+      // Ensure ordersData is an array
+      const orders = Array.isArray(ordersData) ? ordersData : []
+      
+      // Calculate stats
+      const totalOrders = orders.length
+      const totalRevenue = orders.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0)
+      const totalCustomers = new Set(orders.map((order: any) => order.customer_id)).size
+      const conversionRate = totalOrders > 0 ? (totalOrders / totalCustomers) * 100 : 0
 
-      if (!statsRes.ok || !ordersRes.ok || !productsRes.ok || !categoriesRes.ok || !customersRes.ok || !performanceRes.ok) {
-        throw new Error('Failed to fetch dashboard data')
-      }
+      // Calculate changes (comparing with previous period)
+      const previousPeriodOrders = orders.filter((order: any) => 
+        new Date(order.created_at) < new Date(date)
+      ).length
+      
+      const ordersChange = previousPeriodOrders > 0 
+        ? ((totalOrders - previousPeriodOrders) / previousPeriodOrders) * 100 
+        : 0
 
-      const [statsData, ordersData, productsData, categoriesData, customersData, performanceData] = await Promise.all([
-        statsRes.json(),
-        ordersRes.json(),
-        productsRes.json(),
-        categoriesRes.json(),
-        customersRes.json(),
-        performanceRes.json()
-      ])
+      setStats({
+        totalOrders,
+        totalRevenue,
+        totalCustomers,
+        conversionRate: Math.round(conversionRate * 100) / 100,
+        ordersChange: Math.round(ordersChange * 100) / 100,
+        revenueChange: 0, // You can implement this similarly
+        customersChange: 0, // You can implement this similarly
+        conversionChange: 0 // You can implement this similarly
+      })
 
-      setStats(statsData)
-      setRecentOrders(ordersData)
-      setTopProducts(productsData)
-      setCategorySales(categoriesData)
-      setCustomerInsights(customersData)
-      setPerformanceMetrics(performanceData)
+      // Set recent orders
+      setRecentOrders(orders.slice(0, 5).map((order: any) => ({
+        id: order.id,
+        order_number: order.order_number,
+        customer_name: order.customer_name,
+        total_amount: order.total_amount,
+        status: order.status,
+        created_at: order.created_at,
+        items: order.items || []
+      })))
+
+      // Fetch and set top products
+      const productsRes = await fetch('/api/admin/products')
+      const productsData = await productsRes.json()
+      const products = Array.isArray(productsData) ? productsData : []
+      setTopProducts(products.slice(0, 5).map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        image_url: product.image_url,
+        sales_count: product.sales_count || 0,
+        revenue: product.revenue || 0
+      })))
+
+      // Fetch and set category sales
+      const categoriesRes = await fetch('/api/admin/categories')
+      const categoriesData = await categoriesRes.json()
+      const categories = Array.isArray(categoriesData) ? categoriesData : []
+      setCategorySales(categories.map((category: any) => ({
+        category: category.name,
+        revenue: category.revenue || 0,
+        percentage: category.percentage || 0
+      })))
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       toast.error('Failed to load dashboard data')
@@ -165,7 +212,7 @@ export default function DashboardOverviewPage() {
     <div className="space-y-8">
       {/* Date Range Picker */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Dashboard Overview</h1>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-4">
           <Popover>
             <PopoverTrigger asChild>
@@ -209,15 +256,15 @@ export default function DashboardOverviewPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card>
+          <Card className="h-[140px]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
               <ShoppingBag className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalOrders}</div>
+              <div className="text-2xl font-bold">{stats.totalOrders}</div>
               <p className="text-xs text-muted-foreground">
-                {stats?.ordersChange > 0 ? '+' : ''}{stats?.ordersChange}% from last period
+                {stats.ordersChange > 0 ? '+' : ''}{stats.ordersChange}% from last period
               </p>
             </CardContent>
           </Card>
@@ -228,15 +275,15 @@ export default function DashboardOverviewPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <Card>
+          <Card className="h-[140px]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats?.totalRevenue || 0)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
               <p className="text-xs text-muted-foreground">
-                {stats?.revenueChange > 0 ? '+' : ''}{stats?.revenueChange}% from last period
+                {stats.revenueChange > 0 ? '+' : ''}{stats.revenueChange}% from last period
               </p>
             </CardContent>
           </Card>
@@ -247,15 +294,15 @@ export default function DashboardOverviewPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
-          <Card>
+          <Card className="h-[140px]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalCustomers}</div>
+              <div className="text-2xl font-bold">{stats.totalCustomers}</div>
               <p className="text-xs text-muted-foreground">
-                {stats?.customersChange > 0 ? '+' : ''}{stats?.customersChange}% from last period
+                {stats.customersChange > 0 ? '+' : ''}{stats.customersChange}% from last period
               </p>
             </CardContent>
           </Card>
@@ -266,15 +313,15 @@ export default function DashboardOverviewPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.3 }}
         >
-          <Card>
+          <Card className="h-[140px]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.conversionRate}%</div>
+              <div className="text-2xl font-bold">{stats.conversionRate}%</div>
               <p className="text-xs text-muted-foreground">
-                {stats?.conversionChange > 0 ? '+' : ''}{stats?.conversionChange}% from last period
+                {stats.conversionChange > 0 ? '+' : ''}{stats.conversionChange}% from last period
               </p>
             </CardContent>
           </Card>
