@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import { Package, DollarSign, Users, ShoppingCart, Tag, TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Package, DollarSign, Users, ShoppingCart, Tag, TrendingUp, ArrowUpRight, ArrowDownRight, Sparkles, Trophy, Gift, Star } from 'lucide-react'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import confetti from 'canvas-confetti'
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -73,6 +74,19 @@ const item = {
   show: { opacity: 1, y: 0 }
 }
 
+const celebrateMilestone = (type: string) => {
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 }
+  })
+  
+  toast.success(`🎉 Milestone Achieved!`, {
+    description: `You've reached a new ${type} milestone!`,
+    duration: 3000,
+  })
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
@@ -84,6 +98,7 @@ export default function AdminDashboard() {
   })
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [showSparkles, setShowSparkles] = useState(false)
 
   useEffect(() => {
     fetchDashboardData()
@@ -93,7 +108,6 @@ export default function AdminDashboard() {
     try {
       setIsLoading(true)
       
-      // Fetch stats and recent orders in parallel
       const [statsRes, ordersRes] = await Promise.all([
         fetch('/api/admin/dashboard/stats'),
         fetch('/api/admin/dashboard/recent-orders')
@@ -110,6 +124,14 @@ export default function AdminDashboard() {
 
       setStats(statsData)
       setRecentOrders(ordersData)
+
+      // Check for milestones
+      if (statsData.totalOrders > 0 && statsData.totalOrders % 100 === 0) {
+        celebrateMilestone('order')
+      }
+      if (statsData.totalRevenue > 0 && statsData.totalRevenue % 10000 === 0) {
+        celebrateMilestone('revenue')
+      }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -132,7 +154,12 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="relative">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <div className="absolute -top-4 -right-4 animate-pulse">
+            <Sparkles className="h-4 w-4 text-yellow-400" />
+          </div>
+        </div>
       </div>
     )
   }
@@ -140,9 +167,17 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-          Dashboard
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+            Dashboard
+          </h1>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <Sparkles className="h-6 w-6 text-yellow-400" />
+          </motion.div>
+        </div>
         <div className="text-sm text-muted-foreground">
           Last updated: {format(new Date(), 'MMM d, yyyy h:mm a')}
         </div>
@@ -155,8 +190,16 @@ export default function AdminDashboard() {
         animate="show"
         className="grid gap-4 md:grid-cols-2 lg:grid-cols-5"
       >
-        <motion.div variants={item}>
-          <Card className="hover:shadow-lg transition-shadow duration-200">
+        <motion.div 
+          variants={item}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Card 
+            className="hover:shadow-lg transition-all duration-200 cursor-pointer"
+            onMouseEnter={() => setShowSparkles(true)}
+            onMouseLeave={() => setShowSparkles(false)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Products</CardTitle>
               <div className="p-2 bg-blue-100 rounded-full">
@@ -169,6 +212,18 @@ export default function AdminDashboard() {
                 <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
                 <span>Active products</span>
               </div>
+              <AnimatePresence>
+                {showSparkles && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0 }}
+                    className="absolute top-0 right-0"
+                  >
+                    <Sparkles className="h-4 w-4 text-yellow-400" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </CardContent>
           </Card>
         </motion.div>
@@ -191,8 +246,12 @@ export default function AdminDashboard() {
           </Card>
         </motion.div>
 
-        <motion.div variants={item}>
-          <Card className="hover:shadow-lg transition-shadow duration-200">
+        <motion.div 
+          variants={item}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
               <div className="p-2 bg-green-100 rounded-full">
@@ -205,6 +264,15 @@ export default function AdminDashboard() {
                 <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
                 <span>Total earnings</span>
               </div>
+              {stats.totalRevenue > 10000 && (
+                <motion.div
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute top-2 right-2"
+                >
+                  <Trophy className="h-4 w-4 text-yellow-400" />
+                </motion.div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -251,6 +319,7 @@ export default function AdminDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
+        whileHover={{ scale: 1.01 }}
       >
         <Card className="hover:shadow-lg transition-shadow duration-200">
           <CardHeader>
@@ -274,7 +343,11 @@ export default function AdminDashboard() {
                     label={({ date, count }) => `${format(new Date(date), 'MMM d')} (${count})`}
                   >
                     {stats.dayWiseOrders.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[index % COLORS.length]}
+                        className="hover:opacity-80 transition-opacity"
+                      />
                     ))}
                   </Pie>
                   <Tooltip 
@@ -309,6 +382,15 @@ export default function AdminDashboard() {
             <CardTitle className="flex items-center">
               <ShoppingCart className="h-5 w-5 mr-2 text-purple-600" />
               Recent Orders
+              {recentOrders.length > 0 && (
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="ml-2"
+                >
+                  <Gift className="h-5 w-5 text-pink-500" />
+                </motion.div>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -325,8 +407,14 @@ export default function AdminDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentOrders.map((order) => (
-                    <TableRow key={order.id} className="hover:bg-gray-50/50">
+                  {recentOrders.map((order, index) => (
+                    <motion.tr
+                      key={order.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="hover:bg-gray-50/50"
+                    >
                       <TableCell className="font-medium">#{order.order_number}</TableCell>
                       <TableCell>
                         <div>
@@ -337,7 +425,11 @@ export default function AdminDashboard() {
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {order.items.map((item) => (
-                            <Badge key={item.id} variant="secondary" className="bg-gray-100">
+                            <Badge 
+                              key={item.id} 
+                              variant="secondary" 
+                              className="bg-gray-100 hover:bg-gray-200 transition-colors"
+                            >
                               {item.name} x {item.quantity}
                             </Badge>
                           ))}
@@ -352,7 +444,7 @@ export default function AdminDashboard() {
                       <TableCell className="text-muted-foreground">
                         {format(new Date(order.created_at), 'MMM d, yyyy')}
                       </TableCell>
-                    </TableRow>
+                    </motion.tr>
                   ))}
                 </TableBody>
               </Table>
