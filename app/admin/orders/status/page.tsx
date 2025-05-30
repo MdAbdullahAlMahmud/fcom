@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { Order, OrderStatus } from '@/types/order'
 import { logger } from '@/lib/logger'
+import { useToast } from '@/components/ui/use-toast'
 import {
   Table,
   TableBody,
@@ -48,6 +49,7 @@ import {
 
 export default function OrderStatusPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -137,6 +139,11 @@ export default function OrderStatusPage() {
         notes: notes || null
       })
 
+      toast({
+        title: "Status Updated",
+        description: `Order status has been updated to ${status}.`,
+      })
+
       await fetchOrders()
       setIsModalOpen(false)
       setSelectedOrder(null)
@@ -144,6 +151,11 @@ export default function OrderStatusPage() {
     } catch (error) {
       logger.error('Error updating order status', error)
       setError(error instanceof Error ? error.message : 'Failed to update status')
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to update status',
+      })
     } finally {
       setUpdatingStatus(false)
     }
