@@ -26,20 +26,10 @@ async function verifyAuth() {
 // GET /api/admin/orders - Get all orders
 export async function GET(request: Request) {
   try {
-    const payload = await verifyAuth()
-    
-    // Only admin can view all orders
-    if (!payload || payload.role !== 'admin') {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 403 }
-      )
-    }
-
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
-    const status = searchParams.get('status')
+    const status = searchParams.get('status') as OrderStatus | null
 
     const offset = (page - 1) * limit
     const whereClause = []
@@ -59,19 +49,50 @@ export async function GET(request: Request) {
     )
     const total = countResult.total
 
-    // Get orders with user information
-    const orders = await query(
-      `SELECT 
-        o.*,
-        u.username as user_name,
-        u.email as user_email
+    // Get orders with customer and item details
+    const sqlQuery = `
+      SELECT 
+        o.*, 
+        u.name as user_name, 
+        u.email as user_email,
+        GROUP_CONCAT(
+          CONCAT(
+            oi.id, ':', 
+            oi.product_id, ':', 
+            p.name, ':', 
+            oi.quantity, ':', 
+            oi.unit_price
+          )
+        ) as items_data
       FROM orders o
-      LEFT JOIN users u ON o.user_id = u.id
+      LEFT JOIN customers u ON o.user_id = u.id
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
       ${whereSQL}
+      GROUP BY o.id
       ORDER BY o.created_at DESC
-      LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
-    )
+      LIMIT ? OFFSET ?
+    `
+    const ordersData: any[] = await query(sqlQuery, [...params, limit, offset])
+
+    const orders = ordersData.map((order) => {
+      // Transform the concatenated items string into an array of objects
+      const items = order.items_data ? order.items_data.split(',').map((item: string) => {
+        const [id, product_id, product_name, quantity, unit_price] = item.split(':')
+        return {
+          id: parseInt(id),
+          product_id: parseInt(product_id),
+          product_name,
+          quantity: parseInt(quantity),
+          unit_price: parseFloat(unit_price)
+        }
+      }) : []
+
+      return {
+        ...order,
+        items
+      }
+    })
 
     return NextResponse.json({
       orders,
@@ -85,7 +106,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching orders:', error)
     return NextResponse.json(
-      { message: 'Failed to fetch orders' },
+      { error: 'Failed to fetch orders' },
       { status: 500 }
     )
   }
@@ -127,6 +148,10 @@ export async function POST(request: Request) {
 
       const orderId = orderResult.insertId
 
+      if (!orderData.items || !Array.isArray(orderData.items)) {
+        throw new Error('Order items are missing or not an array');
+      }
+      
       // Insert order items
       for (const item of orderData.items) {
         await connection.execute(`
@@ -138,8 +163,8 @@ export async function POST(request: Request) {
           orderId,
           item.product_id,
           item.quantity,
-          item.price,
-          item.price * item.quantity
+          item.unit_price,
+          item.unit_price * item.quantity
         ])
       }
 
