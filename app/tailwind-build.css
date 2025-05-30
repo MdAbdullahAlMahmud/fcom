@@ -1169,6 +1169,10 @@ body {
   max-width: none;
 }
 
+.max-w-md {
+  max-width: 28rem;
+}
+
 .flex-1 {
   flex: 1 1 0%;
 }
@@ -1580,10 +1584,6 @@ body {
   background-color: hsl(var(--muted));
 }
 
-.bg-muted\/50 {
-  background-color: hsl(var(--muted) / 0.5);
-}
-
 .bg-popover {
   background-color: hsl(var(--popover));
 }
@@ -1879,6 +1879,10 @@ body {
 
 .font-semibold {
   font-weight: 600;
+}
+
+.capitalize {
+  text-transform: capitalize;
 }
 
 .tabular-nums {
