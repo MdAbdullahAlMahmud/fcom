@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
-import { query } from '@/lib/db/mysql'
+import { query, pool } from '@/lib/db/mysql'
+import { RowDataPacket } from 'mysql2'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
@@ -31,51 +32,47 @@ export async function GET() {
       )
     }
 
-    const recentOrders = await query(`
+    const [orders] = await pool.query<RowDataPacket[]>(`
       SELECT 
         o.id,
         o.order_number,
         o.total_amount,
         o.status,
         o.created_at,
-        c.name as customer_name,
-        GROUP_CONCAT(
-          CONCAT(
-            p.name, ':', 
-            oi.quantity
+        u.name as customer_name,
+        u.email as customer_email,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', oi.id,
+            'name', p.name,
+            'quantity', oi.quantity,
+            'price', oi.unit_price
           )
         ) as items
       FROM orders o
-      LEFT JOIN customers c ON o.user_id = c.id
+      LEFT JOIN admins u ON o.user_id = u.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
+      WHERE o.status != 'cancelled'
       GROUP BY o.id
       ORDER BY o.created_at DESC
       LIMIT 5
     `)
 
-    // Transform the concatenated items string into an array of objects
-    const transformedOrders = recentOrders.map((order: any) => ({
+    return NextResponse.json(orders.map(order => ({
       id: order.id,
       order_number: order.order_number,
       customer_name: order.customer_name,
+      customer_email: order.customer_email,
       total_amount: order.total_amount,
       status: order.status,
       created_at: order.created_at,
-      items: order.items ? order.items.split(',').map((item: string) => {
-        const [name, quantity] = item.split(':')
-        return {
-          name,
-          quantity: parseInt(quantity)
-        }
-      }) : []
-    }))
-
-    return NextResponse.json(transformedOrders)
+      items: JSON.parse(order.items)
+    })))
   } catch (error) {
     console.error('Error fetching recent orders:', error)
     return NextResponse.json(
-      { message: 'Failed to fetch recent orders' },
+      { error: 'Failed to fetch recent orders' },
       { status: 500 }
     )
   }

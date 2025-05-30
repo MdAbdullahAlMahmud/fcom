@@ -12,7 +12,8 @@
     "db:init": "tsx lib/db/init.ts",
     "setup": "chmod +x scripts/*.sh && ./scripts/setup.sh",
     "dev:script": "chmod +x scripts/*.sh && ./scripts/dev.sh",
-    "build:script": "chmod +x scripts/*.sh && ./scripts/build.sh"
+    "build:script": "chmod +x scripts/*.sh && ./scripts/build.sh",
+    "mcp:start": "chmod +x scripts/*.sh && ./scripts/start-mcp.sh"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
