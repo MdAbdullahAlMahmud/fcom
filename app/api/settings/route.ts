@@ -38,7 +38,7 @@ export async function PUT(request: Request) {
 
     // Verify user is admin
     const [user] = await query(
-      'SELECT role FROM users WHERE id = ?',
+      'SELECT role FROM admins WHERE id = ?',
       [userId]
     )
 

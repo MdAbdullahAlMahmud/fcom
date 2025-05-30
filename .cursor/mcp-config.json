@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "name": "fCommerce Database",
+  "description": "MCP configuration for fCommerce database",
+  "server": {
+    "host": "localhost",
+    "port": 3009,
+    "endpoints": {
+      "schema": "/schema",
+      "relations": "/relations",
+      "table": "/table",
+      "query": "/query"
+    }
+  },
+  "features": {
+    "schema": true,
+    "relations": true,
+    "queryExecution": true,
+    "tableInfo": true,
+    "columnInfo": true,
+    "indexInfo": true,
+    "foreignKeyInfo": true
+  },
+  "security": {
+    "allowedOrigins": ["*"],
+    "allowedMethods": ["GET", "POST", "OPTIONS"],
+    "allowedHeaders": ["Content-Type"]
+  },
+  "cache": {
+    "enabled": true,
+    "ttl": 300,
+    "maxSize": 1000
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "format": "json"
+  }
+} 

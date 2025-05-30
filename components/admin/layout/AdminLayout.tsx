@@ -33,6 +33,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -94,41 +95,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 
-                      isActive={isActiveGroup(['/admin/dashboard'])}
-                      onClick={() => toggleMenu('dashboard')}
-                      className="flex items-center justify-between"
+                      isActive={isActive('/admin')}
                     >
-                      <div>
-                        <Link href="/admin/dashboard/overview" className="flex items-center">
-                          <Home className="mr-2" />Dashboard
-                        </Link>
-                        <ChevronDown className={cn(
-                          "h-4 w-4 ml-2 transition-transform",
-                          expandedMenus.dashboard ? "transform rotate-180" : ""
-                        )} />
-                      </div>
+                      <Link href="/admin" className="flex items-center">
+                        <Home className="mr-2" />Dashboard
+                      </Link>
                     </SidebarMenuButton>
-                    {/* Dashboard Submenu */}
-                    <SidebarMenuSub className={cn(
-                      "transition-all duration-200",
-                      expandedMenus.dashboard ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 overflow-hidden"
-                    )}>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild href="/admin/dashboard/overview" isActive={isActive('/admin/dashboard/overview')}>
-                          <Link href="/admin/dashboard/overview">Overview</Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild href="/admin/dashboard/statistics" isActive={isActive('/admin/dashboard/statistics')}>
-                          <Link href="/admin/dashboard/statistics"><BarChart3 className="mr-2 h-4 w-4" /> Statistics</Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild href="/admin/dashboard/revenue" isActive={isActive('/admin/dashboard/revenue')}>
-                          <Link href="/admin/dashboard/revenue"><DollarSign className="mr-2 h-4 w-4" /> Revenue</Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    </SidebarMenuSub>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton 
@@ -343,6 +315,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </main>
         </div>
       </div>
+      <Toaster />
     </SidebarProvider>
   )
 }

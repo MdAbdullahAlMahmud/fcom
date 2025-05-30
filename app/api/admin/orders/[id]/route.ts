@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose'
 import { query } from '@/lib/db/mysql'
 import { Order, OrderStatus } from '@/types/order'
 import { logger } from '@/lib/logger'
+import { buildUpdateQuery } from '@/lib/utils/sqlUtils'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
@@ -36,7 +37,7 @@ export async function GET(
       `SELECT 
         o.*,
         CASE 
-          WHEN o.user_id IS NOT NULL THEN u.username 
+          WHEN o.user_id IS NOT NULL THEN u.name 
           ELSE NULL 
         END as user_name,
         CASE 
@@ -60,7 +61,7 @@ export async function GET(
         ba.country as billing_country,
         ba.phone as billing_phone
       FROM orders o
-      LEFT JOIN users u ON o.user_id = u.id
+      LEFT JOIN customers u ON o.user_id = u.id
       LEFT JOIN addresses sa ON o.shipping_address_id = sa.id
       LEFT JOIN addresses ba ON o.billing_address_id = ba.id
       WHERE o.id = ?`,
@@ -100,7 +101,7 @@ export async function GET(
         osh.*,
         u.username as updated_by_name
       FROM order_status_history osh
-      LEFT JOIN users u ON osh.created_by = u.id
+      LEFT JOIN admins u ON osh.created_by = u.id
       WHERE osh.order_id = ?
       ORDER BY osh.created_at DESC`,
       [params.id]
@@ -155,43 +156,139 @@ export async function PATCH(
       )
     }
 
+    // Validate and format estimated_delivery_date
+    let formattedDeliveryDate = null
+    if (estimated_delivery_date) {
+      try {
+        // Parse the incoming date (handles both ISO format and YYYY-MM-DD)
+        const dateObj = new Date(estimated_delivery_date)
+        
+        // Validate it's a real date
+        if (isNaN(dateObj.getTime())) {
+          logger.warn('Invalid date provided', { estimated_delivery_date })
+          return NextResponse.json(
+            { message: 'Invalid date provided' },
+            { status: 400 }
+          )
+        }
+        
+        // Convert to YYYY-MM-DD format for database
+        formattedDeliveryDate = dateObj.toISOString().split('T')[0]
+        
+        logger.debug('Date converted', { 
+          original: estimated_delivery_date, 
+          formatted: formattedDeliveryDate 
+        })
+        
+      } catch (error) {
+        logger.warn('Error parsing date', { estimated_delivery_date, error: error })
+        return NextResponse.json(
+          { message: 'Invalid date format provided' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Build dynamic update query
+    const updateFields = []
+    const updateValues = []
+
+    if (status !== undefined) {
+      updateFields.push('status = ?')
+      updateValues.push(status || null)
+    }
+
+    if (tracking_number !== undefined) {
+      updateFields.push('tracking_number = ?')
+      updateValues.push(tracking_number || null)
+    }
+
+    if (estimated_delivery_date !== undefined) {
+      updateFields.push('estimated_delivery_date = ?')
+      updateValues.push(formattedDeliveryDate)
+    }
+
+    // Always update the updated_at field
+    updateFields.push('updated_at = NOW()')
+
+    if (updateFields.length === 1) { // Only updated_at field
+      logger.warn('No fields to update', { orderId: params.id })
+      return NextResponse.json(
+        { message: 'No fields provided for update' },
+        { status: 400 }
+      )
+    }
+
+    // Add the WHERE clause parameter
+    updateValues.push(params.id)
+
+    const updateQuery = `UPDATE orders SET ${updateFields.join(', ')} WHERE id = ?`
+
+    logger.debug('Executing update query', { 
+      query: updateQuery, 
+      values: updateValues 
+    })
+
     // Update order
-    const updateResult = await query(
-      `UPDATE orders SET
-        status = COALESCE(?, status),
-        tracking_number = ?,
-        estimated_delivery_date = ?,
-        updated_at = NOW()
-      WHERE id = ?`,
-      [
-        status || null,
-        tracking_number || null,
-        estimated_delivery_date || null,
-        params.id
-      ]
-    )
+    const updateResult = await query(updateQuery, updateValues)
 
     logger.debug('Order update result', { updateResult })
 
-    // Add status history if status is provided
-    if (status) {
-      const historyResult = await query(
-        `INSERT INTO order_status_history (
-          order_id,
-          status,
-          notes,
-          created_by,
-          created_at
-        ) VALUES (?, ?, ?, ?, NOW())`,
-        [params.id, status, notes || null, payload.sub]
+    // Check if any rows were affected
+    if (updateResult.affectedRows === 0) {
+      logger.warn('Order not found or no changes made', { orderId: params.id })
+      return NextResponse.json(
+        { message: 'Order not found or no changes made' },
+        { status: 404 }
       )
-
-      logger.debug('Status history update result', { historyResult })
     }
 
+    // Add status history if status is provided and not null/undefined
+    if (status && status !== null && status !== undefined) {
+      try {
+        // Ensure all parameters are properly sanitized
+        const orderId = params.id || null
+        const statusValue = status || null
+        const notesValue = notes === undefined ? null : notes
+        const createdBy = payload?.userId || null
+
+        logger.debug('Inserting status history', { 
+          orderId, 
+          statusValue, 
+          notesValue, 
+          createdBy 
+        })
+
+        const historyResult = await query(
+          `INSERT INTO order_status_history (
+            order_id,
+            status,
+            notes,
+            created_by,
+            created_at
+          ) VALUES (?, ?, ?, ?, NOW())`,
+          [orderId, statusValue, notesValue, createdBy]
+        )
+
+        logger.debug('Status history update result', { historyResult })
+      } catch (historyError) {
+        logger.error('Error inserting status history', { 
+          error: historyError,
+          orderId: params.id,
+          status,
+          notes,
+          createdBy: payload?.userId
+        })
+        // Don't throw here - order update was successful, just log the history error
+      }
+    }
+
+
     return NextResponse.json({
-      message: 'Order updated successfully'
+      message: 'Order updated successfully',
+      orderId: params.id
     })
+
   } catch (error) {
     logger.error('Error updating order', error)
     return NextResponse.json(

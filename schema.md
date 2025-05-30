@@ -43,7 +43,7 @@
 
 | Column | Type | Null | Key | Default | Extra |
 |--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
+| id | int(11) | NO | PRI |  |  |
 | name | varchar(255) | NO |  |  |  |
 | slug | varchar(255) | NO | UNI |  |  |
 | description | text | YES |  |  |  |
@@ -53,11 +53,22 @@
 | created_at | timestamp | NO |  | current_timestamp() |  |
 | updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
 
+## Table: `customers`
+
+| Column | Type | Null | Key | Default | Extra |
+|--------|------|------|-----|---------|-------|
+| id | int(11) | NO | PRI |  |  |
+| name | varchar(255) | NO |  |  |  |
+| email | varchar(255) | NO | UNI |  |  |
+| phone | varchar(20) | NO |  |  |  |
+| created_at | timestamp | NO |  | current_timestamp() |  |
+| updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
+
 ## Table: `order_items`
 
 | Column | Type | Null | Key | Default | Extra |
 |--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
+| id | int(11) | NO | PRI |  |  |
 | order_id | int(11) | NO | MUL |  |  |
 | product_id | int(11) | NO | MUL |  |  |
 | quantity | int(11) | NO |  |  |  |
@@ -70,7 +81,7 @@
 
 | Column | Type | Null | Key | Default | Extra |
 |--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
+| id | int(11) | NO | PRI |  |  |
 | order_id | int(11) | NO | MUL |  |  |
 | status | enum('pending','processing','shipped','delivered','cancelled','refunded') | NO |  |  |  |
 | notes | text | YES |  |  |  |
@@ -81,7 +92,7 @@
 
 | Column | Type | Null | Key | Default | Extra |
 |--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
+| id | int(11) | NO | PRI |  |  |
 | user_id | int(11) | NO | MUL |  |  |
 | order_number | varchar(50) | NO | UNI |  |  |
 | tracking_id | varchar(50) | YES |  |  |  |
@@ -104,7 +115,7 @@
 
 | Column | Type | Null | Key | Default | Extra |
 |--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
+| id | int(11) | NO | PRI |  |  |
 | product_id | int(11) | NO | MUL |  |  |
 | attribute_id | int(11) | NO | MUL |  |  |
 | value | text | NO |  |  |  |
@@ -114,7 +125,7 @@
 
 | Column | Type | Null | Key | Default | Extra |
 |--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
+| id | int(11) | NO | PRI |  |  |
 | name | varchar(100) | NO |  |  |  |
 | slug | varchar(100) | NO | UNI |  |  |
 | created_at | timestamp | NO |  | current_timestamp() |  |
@@ -127,15 +138,15 @@
 | product_id | int(11) | NO | MUL |  |  |
 | image_url | varchar(255) | NO |  |  |  |
 | alt_text | varchar(255) | YES |  |  |  |
-| sort_order | int(11) | YES |  | 0 |  |
-| is_primary | tinyint(1) | YES |  | 0 |  |
+| sort_order | int(11) | NO |  | 0 |  |
+| is_primary | tinyint(1) | NO |  | 0 |  |
 | created_at | timestamp | NO |  | current_timestamp() |  |
 
 ## Table: `product_variant_attributes`
 
 | Column | Type | Null | Key | Default | Extra |
 |--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
+| id | int(11) | NO | PRI |  |  |
 | variant_id | int(11) | NO | MUL |  |  |
 | attribute_id | int(11) | NO | MUL |  |  |
 | value | text | NO |  |  |  |
@@ -145,7 +156,7 @@
 
 | Column | Type | Null | Key | Default | Extra |
 |--------|------|------|-----|---------|-------|
-| id | int(11) | NO | PRI |  | auto_increment |
+| id | int(11) | NO | PRI |  |  |
 | product_id | int(11) | NO | MUL |  |  |
 | sku | varchar(100) | YES | UNI |  |  |
 | price | decimal(10,2) | YES |  |  |  |
@@ -165,15 +176,15 @@
 | name | varchar(255) | NO |  |  |  |
 | slug | varchar(255) | NO | UNI |  |  |
 | description | text | YES |  |  |  |
-| short_description | varchar(500) | YES |  |  |  |
-| sku | varchar(100) | YES | UNI |  |  |
+| short_description | text | YES |  |  |  |
+| sku | varchar(50) | NO | UNI |  |  |
 | price | decimal(10,2) | NO |  |  |  |
 | sale_price | decimal(10,2) | YES |  |  |  |
 | stock_quantity | int(11) | NO |  | 0 |  |
 | weight | decimal(10,2) | YES |  |  |  |
 | dimensions | varchar(50) | YES |  |  |  |
-| is_active | tinyint(1) | YES | MUL | 1 |  |
-| is_featured | tinyint(1) | YES |  | 0 |  |
+| is_active | tinyint(1) | NO |  | 1 |  |
+| is_featured | tinyint(1) | NO |  | 0 |  |
 | category_id | int(11) | YES | MUL |  |  |
 | created_at | timestamp | NO |  | current_timestamp() |  |
 | updated_at | timestamp | NO |  | current_timestamp() | on update current_timestamp() |
