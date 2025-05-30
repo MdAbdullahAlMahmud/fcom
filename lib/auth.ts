@@ -1,5 +1,7 @@
 import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
+import jwt from 'jsonwebtoken'
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
 export async function verifyAuth() {
   try {
@@ -22,4 +24,17 @@ export async function verifyAuth() {
     console.error('Auth verification error:', error)
     return null
   }
-} 
+}
+
+
+export function generateToken(payload: any) {
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
+}
+
+export function verifyToken(token: string) {
+    try {
+        return jwt.verify(token, JWT_SECRET)
+    } catch (error) {
+        return null
+    }
+}
