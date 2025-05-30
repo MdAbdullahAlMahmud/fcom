@@ -181,7 +181,7 @@ export async function PATCH(
         })
         
       } catch (error) {
-        logger.warn('Error parsing date', { estimated_delivery_date, error: error.message })
+        logger.warn('Error parsing date', { estimated_delivery_date, error: error })
         return NextResponse.json(
           { message: 'Invalid date format provided' },
           { status: 400 }
@@ -243,21 +243,46 @@ export async function PATCH(
       )
     }
 
-    //Add status history if status is provided and not null
-    // if (status) {
-    //   const historyResult = await query(
-    //     `INSERT INTO order_status_history (
-    //       order_id,
-    //       status,
-    //       notes,
-    //       created_by,
-    //       created_at
-    //     ) VALUES (?, ?, ?, ?, NOW())`,
-    //     [params.id, status, notes || "", payload.sub]
-    //   )
+    // Add status history if status is provided and not null/undefined
+    if (status && status !== null && status !== undefined) {
+      try {
+        // Ensure all parameters are properly sanitized
+        const orderId = params.id || null
+        const statusValue = status || null
+        const notesValue = notes === undefined ? null : notes
+        const createdBy = payload?.userId || null
 
-    //   logger.debug('Status history update result', { historyResult })
-    // }
+        logger.debug('Inserting status history', { 
+          orderId, 
+          statusValue, 
+          notesValue, 
+          createdBy 
+        })
+
+        const historyResult = await query(
+          `INSERT INTO order_status_history (
+            order_id,
+            status,
+            notes,
+            created_by,
+            created_at
+          ) VALUES (?, ?, ?, ?, NOW())`,
+          [orderId, statusValue, notesValue, createdBy]
+        )
+
+        logger.debug('Status history update result', { historyResult })
+      } catch (historyError) {
+        logger.error('Error inserting status history', { 
+          error: historyError,
+          orderId: params.id,
+          status,
+          notes,
+          createdBy: payload?.userId
+        })
+        // Don't throw here - order update was successful, just log the history error
+      }
+    }
+
 
     return NextResponse.json({
       message: 'Order updated successfully',
