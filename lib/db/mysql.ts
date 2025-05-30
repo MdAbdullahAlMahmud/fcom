@@ -2,20 +2,20 @@ import mysql from 'mysql2/promise'
 
 // Create a connection pool
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'fcommerce',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 })
 
 // Helper function to execute queries
-export async function query<T = any>(sql: string, params?: any[]): Promise<T> {
+export async function query(sql: string, params: any[] = []) {
   try {
-    const [rows] = await pool.execute(sql, params)
-    return rows as T
+    const [results] = await pool.execute(sql, params)
+    return results
   } catch (error) {
     console.error('Database query error:', error)
     throw error
@@ -40,4 +40,14 @@ export async function transaction<T>(callback: (connection: mysql.Connection) =>
 }
 
 // Export the pool for direct access if needed
-export { pool } 
+export { pool }
+
+export async function getConnection() {
+  try {
+    const connection = await pool.getConnection()
+    return connection
+  } catch (error) {
+    console.error('Database connection error:', error)
+    throw error
+  }
+} 
