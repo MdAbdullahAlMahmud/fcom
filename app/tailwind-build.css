@@ -1165,12 +1165,12 @@ body {
   max-width: 32rem;
 }
 
-.max-w-none {
-  max-width: none;
-}
-
 .max-w-md {
   max-width: 28rem;
+}
+
+.max-w-none {
+  max-width: none;
 }
 
 .flex-1 {
