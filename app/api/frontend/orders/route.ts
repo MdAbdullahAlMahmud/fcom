@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     // 2. Create user record for the customer
     console.log('Creating user record...')
     const userQuery = `
-      INSERT INTO users (
+      INSERT INTO admins (
         username,
         email,
         phone,
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     // Get the user ID - either from insert or by querying existing user
     let userId = userResult.insertId
     if (userId === 0) {
-      const existingUserQuery = 'SELECT id FROM users WHERE email = ?'
+      const existingUserQuery = 'SELECT id FROM admins WHERE email = ?'
       const existingUserResult = await query(existingUserQuery, [data.customer.email])
       userId = existingUserResult[0]?.id
     }

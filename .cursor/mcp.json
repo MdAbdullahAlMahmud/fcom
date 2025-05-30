@@ -1,0 +1,40 @@
+{
+  "mcpServers": [
+    {
+      "name": "fCommerce Database",
+      "description": "Local MCP server for fCommerce database",
+      "url": "http://localhost:3009",
+      "type": "mysql",
+      "features": {
+        "schema": true,
+        "relations": true,
+        "queryExecution": true,
+        "tableInfo": true,
+        "columnInfo": true,
+        "indexInfo": true,
+        "foreignKeyInfo": true
+      },
+      "endpoints": {
+        "schema": "/schema",
+        "relations": "/relations",
+        "table": "/table",
+        "query": "/query"
+      },
+      "security": {
+        "allowedOrigins": ["*"],
+        "allowedMethods": ["GET", "POST", "OPTIONS"],
+        "allowedHeaders": ["Content-Type"]
+      }
+    }
+  ],
+  "editor": {
+    "formatOnSave": true,
+    "tabSize": 2,
+    "insertSpaces": true
+  },
+  "ai": {
+    "enabled": true,
+    "model": "gpt-4",
+    "temperature": 0.7
+  }
+} 

@@ -25,7 +25,7 @@ export async function PUT(request: Request) {
 
     // Get current user data
     const [user] = await query<any[]>(
-      'SELECT * FROM users WHERE id = ?',
+      'SELECT * FROM admins WHERE id = ?',
       [userId]
     )
 
@@ -49,14 +49,14 @@ export async function PUT(request: Request) {
       // Hash new password
       const hashedPassword = await hash(newPassword, 10)
       await query(
-        'UPDATE users SET password = ? WHERE id = ?',
+        'UPDATE admins SET password = ? WHERE id = ?',
         [hashedPassword, userId]
       )
     }
 
     // Update user profile
     await query(
-      'UPDATE users SET name = ?, email = ? WHERE id = ?',
+      'UPDATE admins SET name = ?, email = ? WHERE id = ?',
       [name, email, userId]
     )
 

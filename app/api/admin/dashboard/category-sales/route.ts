@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
-import { query } from '@/lib/db/mysql'
+import { pool } from '@/lib/db/mysql'
+import { RowDataPacket } from 'mysql2'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
@@ -31,26 +32,33 @@ export async function GET() {
       )
     }
 
-    const categorySales = await query(`
+    const [categories] = await pool.query<RowDataPacket[]>(`
+      WITH category_revenue AS (
+        SELECT 
+          c.id,
+          c.name,
+          COALESCE(SUM(oi.quantity * oi.unit_price), 0) as revenue
+        FROM categories c
+        LEFT JOIN products p ON c.id = p.category_id
+        LEFT JOIN order_items oi ON p.id = oi.product_id
+        LEFT JOIN orders o ON oi.order_id = o.id
+        WHERE o.status != 'cancelled'
+          AND o.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        GROUP BY c.id
+      )
       SELECT 
-        c.id,
-        c.name,
-        COUNT(DISTINCT o.id) as order_count,
-        SUM(oi.quantity * oi.unit_price) as revenue
-      FROM categories c
-      LEFT JOIN products p ON c.id = p.category_id
-      LEFT JOIN order_items oi ON p.id = oi.product_id
-      LEFT JOIN orders o ON oi.order_id = o.id
-      WHERE o.status != 'cancelled'
-      GROUP BY c.id
+        name as category,
+        revenue,
+        ROUND((revenue / (SELECT SUM(revenue) FROM category_revenue)) * 100, 2) as percentage
+      FROM category_revenue
       ORDER BY revenue DESC
     `)
 
-    return NextResponse.json(categorySales)
+    return NextResponse.json(categories)
   } catch (error) {
     console.error('Error fetching category sales:', error)
     return NextResponse.json(
-      { message: 'Failed to fetch category sales' },
+      { error: 'Failed to fetch category sales' },
       { status: 500 }
     )
   }

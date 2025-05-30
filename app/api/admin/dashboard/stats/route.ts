@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { jwtVerify } from 'jose'
-import { query } from '@/lib/db/mysql'
+import { pool } from '@/lib/db/mysql'
+import { RowDataPacket } from 'mysql2'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
 async function verifyAuth() {
-  const token = cookies().get('auth-token')?.value
+  const token = cookies().get('token')?.value
 
   if (!token) {
     return null
@@ -31,48 +32,62 @@ export async function GET() {
       )
     }
 
-    // Get total orders
-    const [ordersCount] = await query('SELECT COUNT(*) as total FROM orders')
-    const totalOrders = ordersCount.total
+    // Get total orders and revenue
+    const [orderStats] = await pool.query<RowDataPacket[]>(`
+      SELECT 
+        COUNT(*) as total_orders,
+        COALESCE(SUM(total_amount), 0) as total_revenue,
+        COUNT(DISTINCT user_id) as total_customers
+      FROM orders
+      WHERE status != 'cancelled'
+    `)
 
-    // Get total revenue
-    const [revenueResult] = await query('SELECT SUM(total_amount) as total FROM orders')
-    const totalRevenue = revenueResult.total || 0
+    // Get orders from previous period for comparison
+    const [previousStats] = await pool.query<RowDataPacket[]>(`
+      SELECT 
+        COUNT(*) as total_orders,
+        COALESCE(SUM(total_amount), 0) as total_revenue,
+        COUNT(DISTINCT user_id) as total_customers
+      FROM orders
+      WHERE status != 'cancelled'
+      AND created_at < DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+    `)
 
-    // Get total customers
-    const [customersCount] = await query('SELECT COUNT(*) as total FROM users WHERE role = "USER"')
-    const totalCustomers = customersCount.total
+    // Calculate changes
+    const current = orderStats[0]
+    const previous = previousStats[0]
 
-    // Calculate conversion rate
-    const conversionRate = totalOrders > 0 ? (totalOrders / totalCustomers) * 100 : 0
+    const ordersChange = previous.total_orders > 0 
+      ? ((current.total_orders - previous.total_orders) / previous.total_orders) * 100 
+      : 0
 
-    // Get previous period stats (30 days ago)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const revenueChange = previous.total_revenue > 0 
+      ? ((current.total_revenue - previous.total_revenue) / previous.total_revenue) * 100 
+      : 0
 
-    const [previousOrdersCount] = await query(
-      'SELECT COUNT(*) as total FROM orders WHERE created_at < ?',
-      [thirtyDaysAgo]
-    )
+    const customersChange = previous.total_customers > 0 
+      ? ((current.total_customers - previous.total_customers) / previous.total_customers) * 100 
+      : 0
 
-    const ordersChange = previousOrdersCount.total > 0 
-      ? ((totalOrders - previousOrdersCount.total) / previousOrdersCount.total) * 100 
+    // Calculate conversion rate based on orders per customer
+    const conversionRate = current.total_customers > 0 
+      ? (current.total_orders / current.total_customers) * 100 
       : 0
 
     return NextResponse.json({
-      totalOrders,
-      totalRevenue,
-      totalCustomers,
+      totalOrders: current.total_orders,
+      totalRevenue: current.total_revenue,
+      totalCustomers: current.total_customers,
       conversionRate: Math.round(conversionRate * 100) / 100,
       ordersChange: Math.round(ordersChange * 100) / 100,
-      revenueChange: 0, // Implement if needed
-      customersChange: 0, // Implement if needed
-      conversionChange: 0 // Implement if needed
+      revenueChange: Math.round(revenueChange * 100) / 100,
+      customersChange: Math.round(customersChange * 100) / 100,
+      conversionChange: 0 // You can implement this if you track conversion rate over time
     })
   } catch (error) {
     console.error('Error fetching dashboard stats:', error)
     return NextResponse.json(
-      { message: 'Failed to fetch dashboard stats' },
+      { error: 'Failed to fetch dashboard stats' },
       { status: 500 }
     )
   }

@@ -762,6 +762,10 @@ body {
   grid-column: span 4 / span 4;
 }
 
+.col-span-7 {
+  grid-column: span 7 / span 7;
+}
+
 .-mx-1 {
   margin-left: -0.25rem;
   margin-right: -0.25rem;
@@ -813,6 +817,10 @@ body {
 
 .ml-2 {
   margin-left: 0.5rem;
+}
+
+.ml-4 {
+  margin-left: 1rem;
 }
 
 .ml-auto {
@@ -944,16 +952,8 @@ body {
   height: 2.25rem;
 }
 
-.h-\[140px\] {
-  height: 140px;
-}
-
 .h-\[1px\] {
   height: 1px;
-}
-
-.h-\[200px\] {
-  height: 200px;
 }
 
 .h-\[300px\] {
@@ -1099,10 +1099,6 @@ body {
 
 .w-\[--sidebar-width\] {
   width: var(--sidebar-width);
-}
-
-.w-\[120px\] {
-  width: 120px;
 }
 
 .w-\[180px\] {
@@ -1403,12 +1399,6 @@ body {
   --tw-space-y-reverse: 0;
   margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
-}
-
-.space-y-8 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-y-reverse: 0;
-  margin-top: calc(2rem * calc(1 - var(--tw-space-y-reverse)));
-  margin-bottom: calc(2rem * var(--tw-space-y-reverse));
 }
 
 .overflow-auto {
