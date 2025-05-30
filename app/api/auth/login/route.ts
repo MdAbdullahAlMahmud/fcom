@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     // Get user from database
     const [user] = await query<User[]>(
-      'SELECT * FROM users WHERE email = ? AND status = "active"',
+      'SELECT * FROM admins WHERE email = ? AND status = "active"',
       [email]
     )
 

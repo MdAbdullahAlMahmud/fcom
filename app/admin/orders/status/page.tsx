@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { Order, OrderStatus } from '@/types/order'
 import { logger } from '@/lib/logger'
+import { useToast } from '@/components/ui/use-toast'
 import {
   Table,
   TableBody,
@@ -48,6 +49,7 @@ import {
 
 export default function OrderStatusPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -60,7 +62,7 @@ export default function OrderStatusPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [itemsPerPage] = useState(10)
   const [isModalOpen, setIsModalOpen] = useState(false)
-
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | null>(null)
   useEffect(() => {
     fetchOrders()
   }, [currentPage, statusFilter])
@@ -137,6 +139,11 @@ export default function OrderStatusPage() {
         notes: notes || null
       })
 
+      toast({
+        title: "Status Updated",
+        description: `Order status has been updated to ${status}.`,
+      })
+
       await fetchOrders()
       setIsModalOpen(false)
       setSelectedOrder(null)
@@ -144,6 +151,11 @@ export default function OrderStatusPage() {
     } catch (error) {
       logger.error('Error updating order status', error)
       setError(error instanceof Error ? error.message : 'Failed to update status')
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to update status',
+      })
     } finally {
       setUpdatingStatus(false)
     }
@@ -325,84 +337,91 @@ export default function OrderStatusPage() {
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Order Status</DialogTitle>
-          </DialogHeader>
-          {selectedOrder && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Status</label>
-                <Select
-                  value={selectedOrder.status}
-                  onValueChange={(value) => {
-                    const newStatus = value as OrderStatus
-                    handleStatusChange(selectedOrder.id, newStatus)
-                  }}
-                  disabled={updatingStatus}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="shipped">Shipped</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="refunded">Refunded</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Update Order Status</DialogTitle>
+    </DialogHeader>
+    {selectedOrder && (
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">Status</label>
+          <Select
+            value={selectedStatus || selectedOrder.status}
+            onValueChange={(value) => setSelectedStatus(value as OrderStatus)}
+            disabled={updatingStatus}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="refunded">Refunded</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Notes</label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add notes about this status change"
-                  disabled={updatingStatus}
-                />
-              </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Notes</label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add notes about this status change"
+            disabled={updatingStatus}
+          />
+        </div>
 
-              <div className="space-y-2">
-                <h4 className="font-medium">Status History</h4>
-                <div className="max-h-[200px] overflow-y-auto space-y-2">
-                  {selectedOrder.statusHistory?.map((history) => (
-                    <div key={history.id} className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <Badge className={getStatusColor(history.status)}>
-                            {history.status}
-                          </Badge>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {formatDate(history.created_at)}
-                          </p>
-                        </div>
-                        <p className="text-sm text-gray-500">
-                          by {history.updated_by_name || 'System'}
-                        </p>
-                      </div>
-                      {history.notes && (
-                        <p className="text-sm mt-2">{history.notes}</p>
-                      )}
-                    </div>
-                  ))}
+        <div className="space-y-2">
+          <h4 className="font-medium">Status History</h4>
+          <div className="max-h-[200px] overflow-y-auto space-y-2">
+            {selectedOrder.statusHistory?.map((history) => (
+              <div key={history.id} className="border rounded-lg p-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <Badge className={getStatusColor(history.status)}>
+                      {history.status}
+                    </Badge>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {formatDate(history.created_at)}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    by {history.updated_by_name || 'System'}
+                  </p>
                 </div>
+                {history.notes && (
+                  <p className="text-sm mt-2">{history.notes}</p>
+                )}
               </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsModalOpen(false)}
-              disabled={updatingStatus}
-            >
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+    <DialogFooter>
+      <Button
+        variant="outline"
+        onClick={() => setIsModalOpen(false)}
+        disabled={updatingStatus}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={() => {
+          if (selectedStatus && selectedOrder) {
+            handleStatusChange(selectedOrder.id, selectedStatus)
+          }
+        }}
+        disabled={updatingStatus || !selectedStatus || selectedStatus === selectedOrder?.status}
+      >
+        Update
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </div>
   )
 } 

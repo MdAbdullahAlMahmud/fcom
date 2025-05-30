@@ -9,7 +9,7 @@ async function createAdminUser() {
 
     // Insert admin user
     await query(`
-      INSERT INTO users (name, email, password, role)
+      INSERT INTO admins (name, email, password, role)
       VALUES (?, ?, ?, 'admin')
       ON DUPLICATE KEY UPDATE
       password = VALUES(password),
@@ -32,3 +32,4 @@ createAdminUser()
     console.error(error)
     process.exit(1)
   }) 
+
