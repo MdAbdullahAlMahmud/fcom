@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/db/mysql'
+import type { RowDataPacket } from 'mysql2'
 
 export async function GET(request: Request) {
   try {
@@ -13,13 +14,15 @@ export async function GET(request: Request) {
       )
     }
 
+
     // Get order details with customer and address information
-    const [order] = await query(`
+
+    const orders = await query(`
       SELECT 
         o.*,
-        u.username,
-        u.email,
-        u.phone,
+        c.name as customer_name,
+        c.email as customer_email,
+        c.phone as customer_phone,
         sa.address_line1 as shipping_address_line1,
         sa.address_line2 as shipping_address_line2,
         sa.city as shipping_city,
@@ -33,11 +36,12 @@ export async function GET(request: Request) {
         ba.postal_code as billing_postal_code,
         ba.country as billing_country
       FROM orders o
-      LEFT JOIN users u ON o.user_id = u.id
+      LEFT JOIN customers c ON o.user_id = c.id
       LEFT JOIN addresses sa ON o.shipping_address_id = sa.id
       LEFT JOIN addresses ba ON o.billing_address_id = ba.id
       WHERE o.order_number = ?
-    `, [orderNumber])
+    `, [orderNumber]) as RowDataPacket[];
+    const order = orders[0];
 
     if (!order) {
       return NextResponse.json(
@@ -62,9 +66,9 @@ export async function GET(request: Request) {
     const statusHistory = await query(`
       SELECT 
         osh.*,
-        u.username as updated_by_username
+        a.username as updated_by_username
       FROM order_status_history osh
-      LEFT JOIN users u ON osh.created_by = u.id
+      LEFT JOIN admins a ON osh.created_by = a.id
       WHERE osh.order_id = ?
       ORDER BY osh.created_at DESC
     `, [order.id])

@@ -1,14 +1,37 @@
 'use client'
 
 import { useCart } from '@/contexts/CartContext'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
+
+// Payment option types
+const PAYMENT_OPTIONS = [
+  { key: 'cod', label: 'Cash on Delivery' },
+  { key: 'online', label: 'Online Payment (bKash/Nagad)' },
+];
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [paymentOption, setPaymentOption] = useState<'cod' | 'online'>('cod');
+  const [paymentAccounts, setPaymentAccounts] = useState<{ provider: string; phone_number: string }[]>([]);
+  const [trxId, setTrxId] = useState('');
+  const [trxVerified, setTrxVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [trxError, setTrxError] = useState('');
+
+  // Fetch payment accounts on mount or when payment option changes
+  useEffect(() => {
+    if (paymentOption === 'online') {
+      fetch('/api/payment-accounts')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setPaymentAccounts(data.accounts || []);
+        });
+    }
+  }, [paymentOption]);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -92,25 +115,19 @@ export default function CheckoutPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Form submission started')
-    console.log('Current form data:', formData)
-    
+    e.preventDefault();
     if (!validateForm()) {
-      console.log('Form validation failed - stopping submission')
-      return
+      return;
     }
-
     if (items.length === 0) {
-      console.log('No items in cart - stopping submission')
-      toast.error('Your cart is empty')
-      return
+      toast.error('Your cart is empty');
+      return;
     }
-
-    setIsSubmitting(true)
-    console.log('Form data:', formData)
-    console.log('Cart items:', items)
-    
+    if (paymentOption === 'online' && !trxVerified) {
+      toast.error('Please verify your Transaction ID before submitting.');
+      return;
+    }
+    setIsSubmitting(true);
     try {
       // Format the address as expected by the API
       const formattedAddress = [
@@ -121,9 +138,9 @@ export default function CheckoutPage() {
           formData.state,
           formData.postal_code
         ].filter(Boolean).join(', ')
-      ].filter(Boolean).join('\n')
+      ].filter(Boolean).join('\n');
 
-      const requestData = {
+      const requestData: any = {
         items: items.map(item => ({
           id: item.id,
           quantity: item.quantity,
@@ -135,41 +152,33 @@ export default function CheckoutPage() {
           email: formData.email || `${formData.phone}@temp.com`,
           phone: formData.phone,
           address: formattedAddress
-        }
+        },
+        payment_method: paymentOption,
+      };
+      if (paymentOption === 'online') {
+        requestData.trxId = trxId;
       }
-      
-      console.log('Sending request with data:', requestData)
-
       const response = await fetch('/api/frontend/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestData),
-      })
-
-      console.log('Response status:', response.status)
-      const responseData = await response.json()
-      console.log('Response data:', responseData)
-
-      if (!response.ok) {
-        throw new Error(responseData.message || 'Failed to create order')
+      });
+      const responseData = await response.json();
+      if (!response.ok || !responseData.success) {
+        throw new Error(responseData.message || 'Failed to create order');
       }
-
-      if (!responseData.success) {
-        throw new Error(responseData.message || 'Failed to create order')
-      }
-
-      const { orderNumber, trackingNumber } = responseData
-      clearCart()
-      router.push(`/order/success?orderNumber=${orderNumber}&trackingNumber=${trackingNumber}`)
+      const { orderNumber, trackingNumber } = responseData;
+      clearCart();
+      router.push(`/order/success?orderNumber=${orderNumber}&trackingNumber=${trackingNumber}`);
     } catch (error) {
-      console.error('Error creating order:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to create order. Please try again.')
+      console.error('Error creating order:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create order. Please try again.');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -342,8 +351,118 @@ export default function CheckoutPage() {
           </form>
         </div>
 
-        {/* Order Summary */}
-        <div>
+        {/* Payment Options + Order Summary */}
+        <div className="space-y-6">
+          {/* Payment Option Cards */}
+          <div className="flex gap-4">
+            {PAYMENT_OPTIONS.map(opt => (
+              <div
+                key={opt.key}
+                className={`flex-1 cursor-pointer border-2 rounded-lg p-4 text-center transition-all duration-200 ${paymentOption === opt.key ? 'border-indigo-600 bg-indigo-50 shadow' : 'border-gray-200 bg-white'}`}
+                onClick={() => {
+                  setPaymentOption(opt.key as 'cod' | 'online');
+                  setTrxId('');
+                  setTrxVerified(false);
+                  setTrxError('');
+                }}
+              >
+                <div className="font-semibold text-lg mb-2">{opt.label}</div>
+                {paymentOption === opt.key && (
+                  <div className="text-indigo-600 font-bold">Selected</div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Online Payment Instructions */}
+          {paymentOption === 'online' && (
+            <div className="bg-white p-4 rounded-lg border border-indigo-200 mb-4">
+              <h3 className="font-semibold text-lg mb-2">Send Money Instructions</h3>
+              <ol className="list-decimal pl-5 mb-2 text-sm text-gray-700">
+                <li>Send the amount to the number below.</li>
+                <li>Use <b>bKash</b> or <b>Nagad</b> Send Money - Personal.</li>
+                <li>After sending the money, fill in your <b>Transaction ID</b>.</li>
+                <li>Click the <b>Verify</b> button.</li>
+                <li>
+                  <b>bKash</b> &amp; <b>Nagad</b> numbers:
+                  <div className="flex gap-4 mt-2">
+                    {['bKash', 'Nagad'].map(provider => {
+                      const acc = paymentAccounts.find(a => a.provider === provider);
+                      return acc ? (
+                        <div key={provider} className="border rounded p-2 flex flex-col items-center">
+                          <div className="font-bold">{provider}</div>
+                          <div className="text-lg font-mono select-all">{acc.phone_number}</div>
+                          <button
+                            type="button"
+                            className="mt-1 text-xs text-blue-600 underline"
+                            onClick={() => {
+                              navigator.clipboard.writeText(acc.phone_number);
+                              toast.success(`${provider} number copied!`);
+                            }}
+                          >Copy</button>
+                          {/* QR code button placeholder */}
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </li>
+              </ol>
+              <div className="mb-2 text-sm">Product Amount: <span className="font-semibold">{total.toFixed(2)} BDT</span></div>
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="text"
+                  placeholder="Transaction ID"
+                  className="border rounded px-2 py-1 flex-1"
+                  value={trxId}
+                  onChange={e => { setTrxId(e.target.value); setTrxVerified(false); setTrxError(''); }}
+                  disabled={trxVerified}
+                />
+                <button
+                  type="button"
+                  className="bg-indigo-600 text-white px-3 py-1 rounded disabled:opacity-50"
+                  onClick={async () => {
+                    setIsVerifying(true);
+                    setTrxError('');
+                    try {
+                      const res = await fetch('/api/verify-trxid', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          TrxID: trxId,
+                          amount: total,
+                          phone: formData.phone,
+                          user_id: null, // You can set user_id if available
+                          name: formData.full_name,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        setTrxVerified(true);
+                        toast.success('Transaction verified successfully!');
+                      } else {
+                        setTrxVerified(false);
+                        setTrxError(data.message || 'Verification failed');
+                        toast.error(data.message || 'Verification failed');
+                      }
+                    } catch (err) {
+                      setTrxVerified(false);
+                      setTrxError('Verification failed');
+                      toast.error('Verification failed');
+                    } finally {
+                      setIsVerifying(false);
+                    }
+                  }}
+                  disabled={isVerifying || !trxId}
+                >
+                  {trxVerified ? 'Verified' : isVerifying ? 'Verifying...' : 'Verify'}
+                </button>
+              </div>
+              {trxError && <div className="text-red-600 text-xs mb-2">{trxError}</div>}
+              {trxVerified && <div className="text-green-600 text-xs mb-2">Transaction ID verified!</div>}
+            </div>
+          )}
+
+          {/* Order Summary */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
             <div className="space-y-4">
