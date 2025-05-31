@@ -47,7 +47,8 @@ export default function CreateProductPage() {
     dimensions: '',
     category_id: '',
     is_active: true,
-    is_featured: false
+    is_featured: false,
+    html: '' // New field for custom HTML
   })
 
   useEffect(() => {
@@ -150,7 +151,8 @@ export default function CreateProductPage() {
           sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
           stock_quantity: parseInt(formData.stock_quantity),
           weight: formData.weight ? parseFloat(formData.weight) : null,
-          category_id: formData.category_id ? parseInt(formData.category_id) : null
+          category_id: formData.category_id ? parseInt(formData.category_id) : null,
+          html: formData.html && formData.html.trim().length > 0 ? formData.html : null
         })
       })
 
@@ -334,6 +336,17 @@ export default function CreateProductPage() {
             <p className="text-sm text-gray-500">
               Upload up to 4 product images. Click on an image to remove it.
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="html">Custom HTML Section (optional)</Label>
+            <Textarea
+              id="html"
+              value={formData.html}
+              onChange={e => setFormData({ ...formData, html: e.target.value })}
+              placeholder="Paste or write any HTML code to show above product details."
+              rows={6}
+            />
           </div>
 
           <div className="flex justify-end space-x-4">

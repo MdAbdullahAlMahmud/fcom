@@ -34,10 +34,11 @@ interface RelatedProduct extends RowDataPacket {
 }
 
 interface ProductDetailsProps {
-  product: Product
+  product: Product & { html?: string }
   relatedProducts: RelatedProduct[]
   discount: number
   savings: string
+  html?: string
 }
 
 function ProductImages({ product, discount }: { product: Product, discount: number }) {
@@ -100,9 +101,17 @@ function ProductImages({ product, discount }: { product: Product, discount: numb
   )
 }
 
-export default function ProductDetails({ product, relatedProducts, discount, savings }: ProductDetailsProps) {
+export default function ProductDetails({ product, relatedProducts, discount, savings, html }: ProductDetailsProps) {
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Custom HTML Section (if present) */}
+      {html && html.trim().length > 0 && (
+        <div className="mb-8">
+          {/* eslint-disable-next-line react/no-danger */}
+          <div dangerouslySetInnerHTML={{ __html: html }} />
+        </div>
+      )}
+
       {/* Main Product Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
         {/* Product Images */}
