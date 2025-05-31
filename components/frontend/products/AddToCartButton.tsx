@@ -32,6 +32,11 @@ export default function AddToCartButton({
   const [showSparkles, setShowSparkles] = useState(false)
 
   const handleAddToCart = () => {
+    if (!product || !product.id || !product.name || !product.price || !product.image_url) {
+      console.error('Invalid product data:', product)
+      return
+    }
+
     setIsAdding(true)
     setShowSparkles(true)
 
@@ -83,7 +88,7 @@ export default function AddToCartButton({
     <div className="relative">
       <motion.button
         onClick={handleAddToCart}
-        disabled={isAdding}
+        disabled={isAdding || !product}
         whileHover={{ 
           scale: 1.02,
           transition: { type: "spring", stiffness: 400, damping: 10 }
