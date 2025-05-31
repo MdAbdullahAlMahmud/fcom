@@ -137,6 +137,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </SidebarMenuSub>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive('/admin/payment-accounts')}>
+                      <Link href="/admin/payment-accounts" className="flex items-center">
+                        <DollarSign className="mr-2" />Bkash/Nagad Accounts
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 
                       isActive={isActive('/admin/categories')}
