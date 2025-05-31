@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+import { Package, Truck, Calendar, MapPin, CreditCard, Receipt } from 'lucide-react'
 
 interface OrderItem {
   id: number
@@ -78,133 +79,226 @@ export default function MyOrdersPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      pending: 'bg-yellow-500',
-      processing: 'bg-blue-500',
-      shipped: 'bg-purple-500',
-      delivered: 'bg-green-500',
-      cancelled: 'bg-red-500',
-      refunded: 'bg-gray-500'
+      pending: 'bg-amber-100 text-amber-800 border-amber-200',
+      processing: 'bg-blue-100 text-blue-800 border-blue-200',
+      shipped: 'bg-purple-100 text-purple-800 border-purple-200',
+      delivered: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      cancelled: 'bg-red-100 text-red-800 border-red-200',
+      refunded: 'bg-gray-100 text-gray-800 border-gray-200'
     }
-    return colors[status] || 'bg-gray-500'
+    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200'
+  }
+
+  const getPaymentStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      paid: 'bg-emerald-100 text-emerald-700',
+      pending: 'bg-amber-100 text-amber-700',
+      failed: 'bg-red-100 text-red-700',
+      refunded: 'bg-gray-100 text-gray-700'
+    }
+    return colors[status] || 'bg-gray-100 text-gray-700'
+  }
+
+  // Safe number conversion and calculation function
+  const safeCalculateTotal = (order: Order) => {
+    const totalAmount = Number(order.total_amount) || 0
+    const shippingFee = Number(order.shipping_fee) || 0
+    const taxAmount = Number(order.tax_amount) || 0
+    const discountAmount = Number(order.discount_amount) || 0
+    
+    return (totalAmount + shippingFee + taxAmount - discountAmount).toFixed(2)
+  }
+
+  const formatCurrency = (amount: number | string) => {
+    const num = Number(amount) || 0
+    return num.toFixed(2)
   }
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="text-center">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 to-purple-50">
+        <div className="container mx-auto py-12">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-8 h-8 bg-purple-600 rounded-full animate-pulse"></div>
+            <div className="w-8 h-8 bg-violet-600 rounded-full animate-pulse delay-75"></div>
+            <div className="w-8 h-8 bg-purple-600 rounded-full animate-pulse delay-150"></div>
+          </div>
+          <p className="text-center text-gray-600 mt-4">Loading your orders...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-6">My Orders</h1>
-      <div className="space-y-6">
-        {orders.length === 0 ? (
-          <Card>
-            <CardContent className="py-8">
-              <p className="text-center text-gray-500">No orders found</p>
-            </CardContent>
-          </Card>
-        ) : (
-          orders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>Order #{order.order_number}</CardTitle>
-                    <p className="text-sm text-gray-500">
-                      {format(new Date(order.created_at), 'PPP')}
-                    </p>
-                  </div>
-                  <Badge className={getStatusColor(order.status)}>
-                    {order.status.toUpperCase()}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Order Items */}
-                  <div className="space-y-2">
-                    {order.items.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4">
-                        {item.product_image && (
-                          <img
-                            src={item.product_image}
-                            alt={item.product_name}
-                            className="w-16 h-16 object-cover rounded"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <p className="font-medium">{item.product_name}</p>
-                          <p className="text-sm text-gray-500">
-                            Quantity: {item.quantity} × ${item.unit_price}
-                          </p>
-                        </div>
-                        <p className="font-medium">${item.total_price}</p>
-                      </div>
-                    ))}
-                  </div>
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 to-purple-50">
+      <div className="container mx-auto py-8 px-4">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="p-2 bg-purple-600 rounded-lg">
+              <Package className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
+          </div>
+          <p className="text-gray-600">Track and manage your orders</p>
+        </div>
 
-                  {/* Order Summary */}
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between">
-                      <p>Subtotal</p>
-                      <p>${order.total_amount}</p>
-                    </div>
-                    <div className="flex justify-between">
-                      <p>Shipping</p>
-                      <p>${order.shipping_fee}</p>
-                    </div>
-                    <div className="flex justify-between">
-                      <p>Tax</p>
-                      <p>${order.tax_amount}</p>
-                    </div>
-                    <div className="flex justify-between">
-                      <p>Discount</p>
-                      <p>-${order.discount_amount}</p>
-                    </div>
-                    <div className="flex justify-between font-bold mt-2">
-                      <p>Total</p>
-                      <p>
-                        $
-                        {(
-                          order.total_amount +
-                          order.shipping_fee +
-                          order.tax_amount -
-                          order.discount_amount
-                        ).toFixed(2)}
-                      </p>
-                    </div>
+        <div className="space-y-6">
+          {orders.length === 0 ? (
+            <Card className="border-purple-200 shadow-lg">
+              <CardContent className="py-16">
+                <div className="text-center">
+                  <div className="p-4 bg-purple-100 rounded-full w-16 h-16 mx-auto mb-4">
+                    <Package className="w-8 h-8 text-purple-600 mx-auto" />
                   </div>
-
-                  {/* Shipping Address */}
-                  <div className="border-t pt-4">
-                    <h3 className="font-medium mb-2">Shipping Address</h3>
-                    <p>{order.shipping_address_line1}</p>
-                    {order.shipping_address_line2 && (
-                      <p>{order.shipping_address_line2}</p>
-                    )}
-                    <p>
-                      {order.shipping_city}, {order.shipping_state}{' '}
-                      {order.shipping_postal_code}
-                    </p>
-                    <p>{order.shipping_country}</p>
-                  </div>
-
-                  {/* Tracking Number */}
-                  {order.tracking_number && (
-                    <div className="border-t pt-4">
-                      <h3 className="font-medium mb-2">Tracking Number</h3>
-                      <p>{order.tracking_number}</p>
-                    </div>
-                  )}
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No orders found</h3>
+                  <p className="text-gray-500">You haven't placed any orders yet</p>
                 </div>
               </CardContent>
             </Card>
-          ))
-        )}
+          ) : (
+            orders.map((order) => (
+              <Card key={order.id} className="border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-purple-600 to-violet-600 text-white">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2">
+                      <CardTitle className="text-xl font-bold">
+                        Order #{order.order_number}
+                      </CardTitle>
+                      <div className="flex items-center space-x-2 text-purple-100">
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-sm">
+                          {format(new Date(order.created_at), 'PPP')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-right">
+                      <Badge className={`${getStatusColor(order.status)} border font-medium`}>
+                        {order.status.toUpperCase()}
+                      </Badge>
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(order.payment_status)}`}>
+                        {order.payment_status.toUpperCase()}
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="p-6">
+                  <div className="space-y-6">
+                    {/* Order Items */}
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
+                        <Receipt className="w-4 h-4 text-purple-600" />
+                        <span>Items Ordered</span>
+                      </h3>
+                      <div className="space-y-3">
+                        {order.items.map((item) => (
+                          <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                            {item.product_image && (
+                              <img
+                                src={item.product_image}
+                                alt={item.product_name}
+                                className="w-16 h-16 object-cover rounded-lg border-2 border-purple-200"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{item.product_name}</p>
+                              <p className="text-sm text-gray-500">
+                                Quantity: {item.quantity} × ${formatCurrency(item.unit_price)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-purple-600">${formatCurrency(item.total_price)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Order Summary */}
+                    <div className="border-t border-gray-200 pt-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">Order Summary</h3>
+                      <div className="bg-purple-50 p-4 rounded-lg space-y-2">
+                        <div className="flex justify-between text-gray-700">
+                          <span>Subtotal</span>
+                          <span>${formatCurrency(order.total_amount)}</span>
+                        </div>
+                        <div className="flex justify-between text-gray-700">
+                          <span>Shipping Fee</span>
+                          <span>${formatCurrency(order.shipping_fee)}</span>
+                        </div>
+                        <div className="flex justify-between text-gray-700">
+                          <span>Tax</span>
+                          <span>${formatCurrency(order.tax_amount)}</span>
+                        </div>
+                        {Number(order.discount_amount) > 0 && (
+                          <div className="flex justify-between text-green-600">
+                            <span>Discount</span>
+                            <span>-${formatCurrency(order.discount_amount)}</span>
+                          </div>
+                        )}
+                        <div className="border-t border-purple-200 pt-2">
+                          <div className="flex justify-between font-bold text-lg text-purple-700">
+                            <span>Total</span>
+                            <span>${safeCalculateTotal(order)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {/* Shipping Address */}
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
+                          <MapPin className="w-4 h-4 text-purple-600" />
+                          <span>Shipping Address</span>
+                        </h3>
+                        <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 space-y-1">
+                          <p>{order.shipping_address_line1}</p>
+                          {order.shipping_address_line2 && (
+                            <p>{order.shipping_address_line2}</p>
+                          )}
+                          <p>
+                            {order.shipping_city}, {order.shipping_state} {order.shipping_postal_code}
+                          </p>
+                          <p className="font-medium">{order.shipping_country}</p>
+                        </div>
+                      </div>
+
+                      {/* Payment & Tracking */}
+                      <div className="space-y-4">
+                        {/* Payment Method */}
+                        <div>
+                          <h3 className="font-semibold text-gray-900 flex items-center space-x-2 mb-2">
+                            <CreditCard className="w-4 h-4 text-purple-600" />
+                            <span>Payment Method</span>
+                          </h3>
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <p className="text-sm text-gray-700 capitalize">{order.payment_method}</p>
+                          </div>
+                        </div>
+
+                        {/* Tracking Number */}
+                        {order.tracking_number && (
+                          <div>
+                            <h3 className="font-semibold text-gray-900 flex items-center space-x-2 mb-2">
+                              <Truck className="w-4 h-4 text-purple-600" />
+                              <span>Tracking Number</span>
+                            </h3>
+                            <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                              <p className="text-sm font-mono text-purple-700">{order.tracking_number}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </div>
     </div>
   )
-} 
+}
