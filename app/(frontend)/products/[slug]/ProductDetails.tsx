@@ -146,7 +146,16 @@ export default function ProductDetails({ product, relatedProducts, discount, sav
           <div className="space-y-4">
             <div className="flex gap-4">
               <Suspense fallback={<div>Loading...</div>}>
-                <AddToCartButton productId={product.id} />
+                <AddToCartButton 
+                  product={{
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    sale_price: product.sale_price,
+                    image_url: product.images[0],
+                    slug: product.slug
+                  }} 
+                />
               </Suspense>
               <button className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
                 Buy Now
