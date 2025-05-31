@@ -1,96 +1,109 @@
 import { query } from '@/lib/db/mysql'
-import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import AddToCartButton from '@/components/frontend/products/AddToCartButton'
+import { RowDataPacket } from 'mysql2'
+import ProductDetails from './ProductDetails'
 
-async function getProduct(slug: string) {
+interface Product extends RowDataPacket {
+  id: number
+  name: string
+  slug: string
+  price: number
+  sale_price: number | null
+  description: string
+  category_id: number
+  category_name: string
+  category_slug: string
+  images: string
+  material?: string
+  weight?: string
+  dimensions?: string
+  sku?: string
+}
+
+interface ProductWithImages extends Omit<Product, 'images'> {
+  images: string[]
+}
+
+interface RelatedProduct extends RowDataPacket {
+  id: number
+  name: string
+  slug: string
+  price: number
+  sale_price: number | null
+  image_url: string
+}
+
+async function getProduct(slug: string): Promise<ProductWithImages | null> {
   try {
     const products = await query(`
       SELECT 
         p.*,
-        pi.image_url,
-        c.name as category_name
+        c.name as category_name,
+        c.slug as category_slug,
+        GROUP_CONCAT(pi.image_url) as images
       FROM products p
-      LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = 1
       LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN product_images pi ON p.id = pi.product_id
       WHERE p.slug = ? AND p.is_active = 1
-    `, [slug])
+      GROUP BY p.id
+    `, [slug]) as Product[]
 
-    return products[0]
+    const product = products[0]
+    if (!product) return null
+
+    // Convert comma-separated images string to array
+    const images = product.images ? product.images.split(',') : []
+    
+    return {
+      ...product,
+      images
+    }
   } catch (error) {
     console.error('Error fetching product:', error)
     return null
   }
 }
 
+async function getRelatedProducts(categoryId: number, currentProductId: number): Promise<RelatedProduct[]> {
+  try {
+    const products = await query(`
+      SELECT 
+        p.id,
+        p.name,
+        p.slug,
+        p.price,
+        p.sale_price,
+        pi.image_url
+      FROM products p
+      LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = 1
+      WHERE p.category_id = ? 
+      AND p.id != ? 
+      AND p.is_active = 1
+      LIMIT 4
+    `, [categoryId, currentProductId]) as RelatedProduct[]
+    
+    return products
+  } catch (error) {
+    console.error('Error fetching related products:', error)
+    return []
+  }
+}
+
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const product = await getProduct(params.slug)
-
+  
   if (!product) {
     notFound()
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Product Image */}
-        <div className="relative h-[500px] bg-white rounded-lg overflow-hidden">
-          {product.image_url ? (
-            <Image
-              src={product.image_url}
-              alt={product.name}
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              No Image
-            </div>
-          )}
-        </div>
+  const relatedProducts = await getRelatedProducts(product.category_id, product.id)
+  const discount = product.sale_price ? Math.round(((product.price - product.sale_price) / product.price) * 100) : 0
+  const savings = product.sale_price ? (product.price - product.sale_price).toFixed(2) : 0
 
-        {/* Product Details */}
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-            {product.category_name && (
-              <p className="text-gray-600">Category: {product.category_name}</p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-            {product.sale_price ? (
-              <>
-                <span className="text-3xl text-red-600 font-bold">
-                  ${Number(product.sale_price).toFixed(2)}
-                </span>
-                <span className="text-xl text-gray-500 line-through">
-                  ${Number(product.price).toFixed(2)}
-                </span>
-              </>
-            ) : (
-              <span className="text-3xl font-bold">
-                ${Number(product.price).toFixed(2)}
-              </span>
-            )}
-          </div>
-
-          {product.short_description && (
-            <p className="text-gray-600">{product.short_description}</p>
-          )}
-
-          {product.description && (
-            <div className="prose max-w-none">
-              <h2 className="text-xl font-semibold mb-2">Description</h2>
-              <p>{product.description}</p>
-            </div>
-          )}
-
-          <div className="pt-4">
-            <AddToCartButton product={product} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+  return <ProductDetails 
+    product={product} 
+    relatedProducts={relatedProducts} 
+    discount={discount} 
+    savings={savings} 
+  />
 } 

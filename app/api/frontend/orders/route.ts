@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { transaction } from '@/lib/db/mysql'
 import { v4 as uuidv4 } from 'uuid'
 import { ResultSetHeader, RowDataPacket } from 'mysql2'
+import { da } from 'date-fns/locale'
 
 export async function POST(request: Request) {
   try {
@@ -29,6 +30,8 @@ export async function POST(request: Request) {
       // Always create a new customer, but make email unique by appending a timestamp if duplicate error occurs
       let customerId: number | undefined = undefined;
       let emailToUse = data.customer.email;
+
+      
       try {
         const [customerResult] = await connection.execute<ResultSetHeader>(
           `INSERT INTO customers (name, email, phone) VALUES (?, ?, ?)`,
@@ -147,8 +150,8 @@ export async function POST(request: Request) {
         `INSERT INTO orders (
           order_number, tracking_number, tracking_id, user_id, shipping_address_id,
           billing_address_id, total_amount, status, payment_status,
-          payment_method, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
+          payment_method, notes,shipping_fee,shipping_type
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?,?,?)`,
         [
           orderNumber,
           trackingNumber,
@@ -159,7 +162,9 @@ export async function POST(request: Request) {
           data.total,
           paymentStatus,
           paymentMethod,
-          notes
+          notes,
+          data.shipping_fee,
+          data.shipping_type
         ]
       );
 
