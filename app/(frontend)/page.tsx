@@ -294,48 +294,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Special Offers */}
-      <section className="py-24">
-        <div className="container mx-auto px-6">
-          <div className="relative bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 rounded-3xl overflow-hidden shadow-2xl">
-            {/* Decorative elements */}
-            <div className="absolute top-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-            <div className="absolute bottom-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-            
-            <div className="grid md:grid-cols-2 items-center">
-              <div className="p-12 lg:p-16">
-                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
-                  <Gift className="h-5 w-5 text-white" />
-                  <span className="text-white font-medium">Limited Time Offer</span>
-                </div>
-                
-                <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
-                  Get <span className="text-yellow-300">20% Off</span><br />
-                  Your First Order
-                </h2>
-                
-                <p className="text-xl text-white/90 mb-8 leading-relaxed">
-                  Use code <span className="font-bold bg-white/20 px-3 py-1 rounded-lg">WELCOME20</span> at checkout to get 20% off your first purchase
-                </p>
-                
-                <Link
-                  href="/products"
-                  className="group inline-flex items-center gap-3 bg-white text-violet-600 px-8 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                >
-                  Shop Now
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-              
-              <div className="hidden md:block relative p-12">
-                <div className="aspect-square bg-gradient-to-br from-white/20 to-white/5 rounded-3xl backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                  <Tag className="h-24 w-24 text-white/60" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+    
 
       {/* Newsletter Section */}
       <section className="py-24 bg-gradient-to-br from-slate-900 to-slate-800">
