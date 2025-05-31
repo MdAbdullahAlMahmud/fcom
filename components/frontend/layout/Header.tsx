@@ -56,7 +56,7 @@ export default function Header() {
             <Link href="/products" className="hover:text-gray-600">
               Products
             </Link>
-            <Link href="/category" className="hover:text-gray-600">
+            <Link href="/categories" className="hover:text-gray-600">
               Categories
             </Link>
           </nav>
