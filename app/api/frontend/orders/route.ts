@@ -22,29 +22,36 @@ export async function POST(request: Request) {
       throw new Error('Invalid order total')
     }
 
+
     const result = await transaction(async (connection) => {
-      // 1. Create/update customer
-      console.log('Creating/updating customer...')
-      const [customerResult] = await connection.execute<ResultSetHeader>(
-        `INSERT INTO customers (name, email, phone) 
-         VALUES (?, ?, ?)
-         ON DUPLICATE KEY UPDATE 
-         name = VALUES(name),
-         phone = VALUES(phone)`,
-        [data.customer.name, data.customer.email, data.customer.phone]
-      )
-
-      const customerId = customerResult.insertId || (
-        await connection.execute<RowDataPacket[]>(
-          'SELECT id FROM customers WHERE email = ?',
-          [data.customer.email]
-        )
-      )[0][0]?.id
-
-      if (!customerId) {
-        throw new Error('Failed to create or get customer ID')
+      // 1. Always create a new customer (no deduplication)
+      console.log('Creating new customer (no deduplication)...')
+      // Always create a new customer, but make email unique by appending a timestamp if duplicate error occurs
+      let customerId: number | undefined = undefined;
+      let emailToUse = data.customer.email;
+      try {
+        const [customerResult] = await connection.execute<ResultSetHeader>(
+          `INSERT INTO customers (name, email, phone) VALUES (?, ?, ?)`,
+          [data.customer.name, emailToUse, data.customer.phone]
+        );
+        customerId = customerResult.insertId;
+      } catch (err: any) {
+        // If duplicate email error, try again with a unique email
+        if (err && err.code === 'ER_DUP_ENTRY' && /email/.test(err.sqlMessage)) {
+          emailToUse = `${data.customer.email.split('@')[0]}+${Date.now()}@${data.customer.email.split('@')[1]}`;
+          const [customerResult2] = await connection.execute<ResultSetHeader>(
+            `INSERT INTO customers (name, email, phone) VALUES (?, ?, ?)`,
+            [data.customer.name, emailToUse, data.customer.phone]
+          );
+          customerId = customerResult2.insertId;
+        } else {
+          throw err;
+        }
       }
-      console.log('Customer ID:', customerId)
+      if (!customerId) {
+        throw new Error('Failed to create customer');
+      }
+      console.log('Customer ID:', customerId, 'Email used:', emailToUse);
 
       // 2. Create/update user
       console.log('Creating/updating user...')
@@ -100,32 +107,67 @@ export async function POST(request: Request) {
       }
       console.log('Address created with ID:', addressId)
 
-      // 4. Create order
+
+      // 4. Create order (handle online payment logic)
       console.log('Creating order...')
       const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`
       const trackingNumber = `TRK-${uuidv4().slice(0, 8).toUpperCase()}`
 
+
+      let paymentMethod = 'cash_on_delivery';
+      let trackingId: string | null = null;
+      let notes = 'Order placed by customer';
+
+      let paymentStatus = 'pending';
+      if (data.payment_method === 'online' && data.trxId) {
+        // 1. Find the transaction in stored_data
+        const trxRows = await connection.execute<RowDataPacket[]>(
+          'SELECT * FROM stored_data WHERE TrxID = ? LIMIT 1',
+          [data.trxId]
+        );
+        const trxData = Array.isArray(trxRows[0]) ? trxRows[0][0] : trxRows[0];
+        if (!trxData) {
+          throw new Error('Transaction ID not found in stored_data');
+        }
+        // 2. Get text_company (bkash/nagad/etc)
+        let company = trxData.text_company || 'online';
+        paymentMethod = 'online_payment';
+        trackingId = data.trxId;
+        paymentStatus = 'paid';
+
+        // 3. Update stored_data with phone, user_id, name
+        await connection.execute(
+          'UPDATE stored_data SET phone = ?, user_id = ?, name = ? WHERE TrxID = ?',
+          [data.customer.phone, customerId, data.customer.name, data.trxId]
+        );
+        notes = company;
+      }
+
       const [orderResult] = await connection.execute<ResultSetHeader>(
         `INSERT INTO orders (
-          order_number, tracking_number, user_id, shipping_address_id,
+          order_number, tracking_number, tracking_id, user_id, shipping_address_id,
           billing_address_id, total_amount, status, payment_status,
           payment_method, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', 'pending', 'cash_on_delivery', 'Order placed by customer')`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
         [
           orderNumber,
           trackingNumber,
+          trackingId,
           customerId,
           addressId,
           addressId,
-          data.total
+          data.total,
+          paymentStatus,
+          paymentMethod,
+          notes
         ]
-      )
+      );
 
-      const orderId = orderResult.insertId
+      const orderId = orderResult.insertId;
       if (!orderId) {
-        throw new Error('Failed to create order')
+        throw new Error('Failed to create order');
       }
-      console.log('Order created with ID:', orderId)
+      console.log('Order created with ID:', orderId);
 
       // 5. Create order items
       console.log('Creating order items...')

@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Products', href: '/admin/products', icon: ShoppingBagIcon },
   { name: 'Orders', href: '/admin/orders', icon: ClipboardDocumentListIcon },
   { name: 'Customers', href: '/admin/customers', icon: UsersIcon },
+  { name: 'Bkash/Nagad accounts', href: '/admin/payment-accounts', icon: ClipboardDocumentListIcon },
   { name: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
