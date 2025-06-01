@@ -80,4 +80,6 @@ export interface Order {
   updated_at: string
   items: OrderItem[]
   statusHistory: OrderStatusHistory[]
+  // Optional: for admin listing, backend can provide a display string for payment method
+  payment_method_display?: string
 } 
