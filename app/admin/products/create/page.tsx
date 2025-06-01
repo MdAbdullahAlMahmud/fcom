@@ -39,7 +39,7 @@ export default function CreateProductPage() {
     name: '',
     description: '',
     short_description: '',
-    sku: '',
+sku: '',
     price: '',
     sale_price: '',
     stock_quantity: '',
@@ -179,6 +179,7 @@ export default function CreateProductPage() {
 
       <div className="bg-white rounded-lg shadow p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
+
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -197,6 +198,28 @@ export default function CreateProductPage() {
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                 required
               />
+            </div>
+          </div>
+
+          {/* Active/Featured checkboxes */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex items-center space-x-2">
+              <input
+                id="is_active"
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
+              />
+              <Label htmlFor="is_active">Active</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                id="is_featured"
+                type="checkbox"
+                checked={formData.is_featured}
+                onChange={e => setFormData({ ...formData, is_featured: e.target.checked })}
+              />
+              <Label htmlFor="is_featured">Featured</Label>
             </div>
           </div>
 

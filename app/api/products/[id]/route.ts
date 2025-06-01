@@ -66,7 +66,7 @@ export async function GET(
           alt_text: alt_text || null
         }
       }) : [],
-      html: product.product_html || null
+      html: product.product_html ?? undefined
     }
 
     return NextResponse.json(transformedProduct)

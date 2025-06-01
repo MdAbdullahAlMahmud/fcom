@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     ) as any[]
     const total = countResult.total
 
-    // Get products with category and images
+    // Get products with category, images, and HTML
     const products = await query(
       `SELECT 
         p.*,
@@ -64,10 +64,12 @@ export async function GET(request: Request) {
             pi.image_url, ':', 
             COALESCE(pi.alt_text, '')
           )
-        ) as images
+        ) as images,
+        ph.html as product_html
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id
+      LEFT JOIN product_html ph ON p.id = ph.product_id
       ${whereSQL}
       GROUP BY p.id
       ORDER BY p.created_at DESC
@@ -85,7 +87,8 @@ export async function GET(request: Request) {
           image_url,
           alt_text: alt_text || null
         }
-      }) : []
+      }) : [],
+      html: product.product_html ?? undefined
     }))
 
     return NextResponse.json({

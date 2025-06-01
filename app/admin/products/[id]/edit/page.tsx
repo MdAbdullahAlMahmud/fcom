@@ -206,6 +206,26 @@ export default function EditProductPage({
       <div className="bg-white rounded-lg shadow p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
+            <div className="flex items-center space-x-2">
+              <input
+                id="is_active"
+                type="checkbox"
+                checked={product.is_active}
+                onChange={e => setProduct({ ...product, is_active: e.target.checked })}
+              />
+              <Label htmlFor="is_active">Active</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                id="is_featured"
+                type="checkbox"
+                checked={product.is_featured}
+                onChange={e => setProduct({ ...product, is_featured: e.target.checked })}
+              />
+              <Label htmlFor="is_featured">Featured</Label>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
