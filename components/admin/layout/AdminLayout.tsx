@@ -136,12 +136,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </SidebarMenuItem>
+                  {/* bKash/Nagad Panel Group */}
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isActive('/admin/payment-accounts')}>
-                      <Link href="/admin/payment-accounts" className="flex items-center">
-                        <DollarSign className="mr-2" />Bkash/Nagad Accounts
-                      </Link>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActiveGroup(['/admin/bkash-nagad'])}
+                      onClick={() => toggleMenu('bkashNagad')}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="flex items-center">
+                          <DollarSign className="mr-2" />bKash/Nagad Panel
+                        </span>
+                        <ChevronDown className={cn(
+                          "h-4 w-4 ml-2 transition-transform",
+                          expandedMenus.bkashNagad ? "transform rotate-180" : ""
+                        )} />
+                      </div>
                     </SidebarMenuButton>
+                    <SidebarMenuSub className={cn(
+                      "transition-all duration-200",
+                      expandedMenus.bkashNagad ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+                    )}>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild href="/admin/bkash-nagad/account-settings" isActive={isActive('/admin/bkash-nagad/account-settings')}>
+                          <Link href="/admin/bkash-nagad/account-settings">Account Settings</Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild href="/admin/bkash-nagad/transactions" isActive={isActive('/admin/bkash-nagad/transactions')}>
+                          <Link href="/admin/bkash-nagad/transactions">Transactions</Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton 
