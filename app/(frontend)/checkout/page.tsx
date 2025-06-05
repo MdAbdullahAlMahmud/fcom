@@ -102,6 +102,15 @@ export default function CheckoutPage() {
       }
       return false
     }
+
+    // Email validation is mandatory,it should be valid email address
+
+    if (formData.email && formData.email.trim() === '') {
+      console.log('Validation failed: Email is empty')
+      toast.error('Please enter your email address')
+      return false
+    }
+
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       console.log('Validation failed: Invalid email format:', formData.email)
       toast.error('Please enter a valid email address')
@@ -190,8 +199,56 @@ export default function CheckoutPage() {
         throw new Error(responseData.message || 'Failed to create order');
       }
       const { orderNumber, trackingNumber } = responseData;
-      clearCart();
-      router.push(`/order/success?orderNumber=${orderNumber}&trackingNumber=${trackingNumber}`);
+
+
+      const now = new Date();
+      const invoicePayload = {
+        customer: {
+          name: formData.full_name,
+          email: formData.email || `${formData.phone}@temp.com`,
+          phone: formData.phone,
+          address: formattedAddress,
+        },
+        invoice: {
+          number: orderNumber || '',
+          date: now.toISOString().slice(0, 10),
+          items: items.map(item => ({
+            name: item.name || '',
+            quantity: item.quantity || 0,
+            unit_price: item.sale_price || item.price || 0,
+            total: ((item.sale_price || item.price) * item.quantity) || 0,
+          })),
+          subtotal: total || 0,
+          discount: 0, // Add discount logic if available
+          tax: 0,      // Add tax logic if available
+          shippingFee: shippingCost || 0,
+          shippingMethod: SHIPPING_OPTIONS.find(opt => opt.key === shippingOption)?.label || '',
+          total: finalTotal || 0,
+          paymentMethod: paymentOption || '',
+          thankYou: `Thank you for shopping with us!`,
+        },
+        company: {
+          name: 'fCommerce',
+          contact: '',
+          phone: '',
+        },
+      };
+
+      // Send invoice creation request
+      const res = await fetch('/api/invoice-sender/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invoicePayload),
+      });
+
+      if (!res.ok) {
+        // Optionally handle the error (e.g., show message or log)
+        console.error('Invoice sending failed:', await res.json());
+      } else {
+        // Only clear cart after successful invoice creation
+        clearCart();
+        router.push(`/order/success?orderNumber=${orderNumber}&trackingNumber=${trackingNumber}`);
+      }
     } catch (error) {
       console.error('Error creating order:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create order. Please try again.');
@@ -265,7 +322,7 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Email (Optional)
+                      Email *
                     </label>
                     <input
                       type="email"
@@ -275,6 +332,7 @@ export default function CheckoutPage() {
                       onChange={handleChange}
                       className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 focus:bg-white"
                       placeholder="your@email.com"
+                      required
                     />
                   </div>
                 </div>
