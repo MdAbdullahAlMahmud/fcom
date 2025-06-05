@@ -1,0 +1,127 @@
+<!-- template1.html: User's custom Invoice HTML Template for Puppeteer PDF generation -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice - Wegrapps</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; padding: 20px; }
+    .invoice-container { max-width: 800px; margin: 0 auto; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+    .invoice-title { font-size: 3rem; font-weight: 900; padding: 20px 30px; letter-spacing: -1px; }
+    .invoice-details { padding: 0 30px 20px; display: grid; gap: 20px; }
+    .bill-from-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .detail-section h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+    .detail-section p { font-size: 0.85rem; color: #666; margin-bottom: 3px; }
+    .items-section { padding: 0 30px 20px; }
+    .items-table { width: 100%; border-collapse: collapse; background: #f8f9fa; border-radius: 4px; }
+    .items-table th { padding: 12px 15px; text-align: left; font-weight: 600; font-size: 0.8rem; color: #495057; background: #e9ecef; text-transform: uppercase; }
+    .items-table td { padding: 12px 15px; border-bottom: 1px solid #dee2e6; font-size: 0.9rem; }
+    .quantity { text-align: center; font-weight: 600; }
+    .price, .amount { text-align: right; font-weight: 600; }
+    .name { text-align: left; font-weight: 600; }
+    .summary-section { padding: 0 30px 20px; }
+    .summary-table { width: 100%; max-width: 250px; margin-left: auto; }
+    .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.9rem; }
+    .summary-row.subtotal { border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .summary-row.total { border-top: 2px solid #333; padding-top: 12px; font-size: 1.1rem; font-weight: 700; }
+    .summary-label { color: #666; }
+    .summary-value { font-weight: 600; }
+    .discount-value { color: #dc3545; }
+    .tax-value { color: #fd7e14; }
+    .footer { background: #f8f9fa; padding: 20px 30px; border-top: 1px solid #eee; }
+    .footer h4 { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+    .footer p { font-size: 0.8rem; color: #666; }
+    .thank-you { text-align: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; font-weight: 500; }
+    .wave-bottom { height: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }
+    @media (max-width: 768px) { .bill-from-row { grid-template-columns: 1fr; } .wave-bottom { height: 15px; } }
+  </style>
+</head>
+<body>
+  <div class="invoice-container">
+    <div class="invoice-title">{{invoiceTitle}}</div>
+    <div class="invoice-details">
+      <div class="detail-section">
+        <h3>Date:</h3>
+        <p><strong>{{invoiceDate}}</strong></p>
+      </div>
+      <div class="bill-from-row">
+        <div class="detail-section">
+          <h3>Billed to:</h3>
+          <p><strong>{{customerName}}</strong></p>
+          <p>{{customerEmail}}</p>
+        </div>
+        <div class="detail-section">
+          <h3>From:</h3>
+          <p><strong>{{companyName}}</strong></p>
+          <p>{{companyEmail}}</p>
+          <p>{{companyPhone}}</p>
+        </div>
+      </div>
+    </div>
+    <div class="items-section">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each items}}
+          <tr>
+            <td class="name">{{name}}</td>
+            <td class="quantity">{{quantity}}</td>
+            <td class="price">৳{{unit_price}}</td>
+            <td class="amount">৳{{total}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+    <div class="summary-section">
+      <div class="summary-table">
+        <div class="summary-row subtotal">
+          <span class="summary-label">Subtotal</span>
+          <span class="summary-value">৳{{subtotal}}</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Discount</span>
+          <span class="summary-value discount-value">৳{{discount}}</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Tax</span>
+          <span class="summary-value tax-value">৳{{tax}}</span>
+        </div>
+
+        <div class="summary-row">
+          <span class="summary-label">Shipping Fee</span>
+          <span class="summary-value">৳{{shippingFee}}</span>
+        </div>
+        
+        <div class="summary-row total">
+          <span class="summary-label">Total</span>
+          <span class="summary-value">৳{{total}}</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <h4>Payment method:</h4>
+      <p>{{paymentMethod}}</p>
+
+      <h4>Shipping Method:</h4>
+      <p>{{shippingMethod}}</p>
+
+      </h4>
+
+      <div class="thank-you">
+        <strong>{{thankYou}}</strong>
+      </div>
+    </div>
+    <div class="wave-bottom"></div>
+  </div>
+</body>
+</html>
