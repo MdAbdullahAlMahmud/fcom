@@ -3,11 +3,14 @@ import { google } from 'googleapis';
 
 export async function sendInvoiceEmail({
   to,
-  customerName,
-  invoiceNumber,
-  companyName,
-  invoiceLink,
+  customerName = '',
+  invoiceNumber = '',
+  companyName = '',
+  invoiceLink = '',
   oauth2,
+  subject: customSubject,
+  html: customHtml,
+  text: customText,
 }) {
   try {
     // Set up OAuth2 client
@@ -21,9 +24,10 @@ export async function sendInvoiceEmail({
 
     const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
 
-    const subject = `Your Invoice #${invoiceNumber} from ${companyName}`;
-    const text = `Dear ${customerName},\n\nThank you for your business. You can view your invoice at: ${invoiceLink}\n\nBest regards,\n${companyName}`;
-    const html = `<!DOCTYPE html>
+    // Use custom subject/html/text if provided, else fallback to invoice template
+    const subject = customSubject || `Your Invoice #${invoiceNumber} from ${companyName}`;
+    const text = customText || `Dear ${customerName},\n\nThank you for your business. You can view your invoice at: ${invoiceLink}\n\nBest regards,\n${companyName}`;
+    const html = customHtml || `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">

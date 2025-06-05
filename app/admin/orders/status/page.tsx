@@ -63,6 +63,7 @@ export default function OrderStatusPage() {
   const [itemsPerPage] = useState(10)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | null>(null)
+  const [sendStatusEmail, setSendStatusEmail] = useState(false)
   useEffect(() => {
     fetchOrders()
   }, [currentPage, statusFilter])
@@ -133,6 +134,22 @@ export default function OrderStatusPage() {
         throw new Error(errorData.message || 'Failed to update order status')
       }
 
+      // Send status update email if checked
+      const updatedOrder = orders.find(o => o.id === orderId)
+      if (sendStatusEmail && updatedOrder?.user_email) {
+        await fetch('/api/invoice-sender/send-generic-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: updatedOrder.user_email,
+            subject: `Your Order #${updatedOrder.order_number} status updated to ${status}`,
+            companyName: 'fCommerce',
+            html: `<p>Dear ${updatedOrder.user_name || 'Customer'},</p><p>Your order <b>#${updatedOrder.order_number}</b> status has been updated to <b>${status}</b>.</p><p>Notes: ${notes || 'N/A'}</p><p>Thank you for shopping with us!</p>`,
+            text: `Dear ${updatedOrder.user_name || 'Customer'},\nYour order #${updatedOrder.order_number} status has been updated to ${status}.\nNotes: ${notes || 'N/A'}\nThank you for shopping with us!`,
+          }),
+        })
+      }
+
       logger.info('Order status updated successfully', {
         orderId,
         status,
@@ -148,6 +165,7 @@ export default function OrderStatusPage() {
       setIsModalOpen(false)
       setSelectedOrder(null)
       setNotes('')
+      setSendStatusEmail(false)
     } catch (error) {
       logger.error('Error updating order status', error)
       setError(error instanceof Error ? error.message : 'Failed to update status')
@@ -399,6 +417,19 @@ export default function OrderStatusPage() {
             ))}
           </div>
         </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="send-status-email"
+            checked={sendStatusEmail}
+            onChange={e => setSendStatusEmail(e.target.checked)}
+            disabled={updatingStatus}
+          />
+          <label htmlFor="send-status-email" className="text-sm select-none cursor-pointer">
+            Send status update email to customer
+          </label>
+        </div>
       </div>
     )}
     <DialogFooter>
@@ -424,4 +455,4 @@ export default function OrderStatusPage() {
 </Dialog>
     </div>
   )
-} 
+}
