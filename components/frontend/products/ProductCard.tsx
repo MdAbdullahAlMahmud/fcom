@@ -220,11 +220,11 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
         {/* Price */}
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold text-gray-900">
-            ${displayPrice.toFixed(2)}
+            ৳{displayPrice.toFixed(2)}
           </span>
           {hasDiscount && (
             <span className="text-sm text-gray-500 line-through">
-              ${numPrice.toFixed(2)}
+              ৳{numPrice.toFixed(2)}
             </span>
           )}
         </div>

@@ -127,18 +127,18 @@ export default function ProductDetails({ product, relatedProducts, discount, sav
             <div className="flex items-baseline gap-3">
               {product.sale_price ? (
                 <>
-                  <span className="text-3xl font-bold">${product.sale_price}</span>
-                  <span className="text-xl text-gray-500 line-through">${product.price}</span>
+                  <span className="text-3xl font-bold">৳{product.sale_price}</span>
+                  <span className="text-xl text-gray-500 line-through">৳{product.price}</span>
                   <span className="px-2 py-1 bg-red-100 text-red-600 rounded-full text-sm font-medium">
                     {discount}% OFF
                   </span>
                 </>
               ) : (
-                <span className="text-3xl font-bold">${product.price}</span>
+                <span className="text-3xl font-bold">৳{product.price}</span>
               )}
             </div>
             {product.sale_price && (
-              <p className="text-green-600 font-medium">Save ${savings} today!</p>
+              <p className="text-green-600 font-medium">Save ৳{savings} today!</p>
             )}
           </div>
 
@@ -278,4 +278,4 @@ export default function ProductDetails({ product, relatedProducts, discount, sav
       )}
     </div>
   )
-} 
+}

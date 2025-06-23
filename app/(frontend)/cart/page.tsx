@@ -94,10 +94,10 @@ export default function CartPage() {
                           {item.sale_price ? (
                             <>
                               <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
-                                ${Number(item.sale_price).toFixed(2)}
+                                ৳{Number(item.sale_price).toFixed(2)}
                               </span>
                               <span className="text-slate-400 line-through text-lg">
-                                ${Number(item.price).toFixed(2)}
+                                ৳{Number(item.price).toFixed(2)}
                               </span>
                               <span className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
                                 SALE
@@ -105,7 +105,7 @@ export default function CartPage() {
                             </>
                           ) : (
                             <span className="text-2xl font-bold text-slate-900">
-                              ${Number(item.price).toFixed(2)}
+                              ৳{Number(item.price).toFixed(2)}
                             </span>
                           )}
                         </div>
@@ -142,7 +142,7 @@ export default function CartPage() {
                       <div className="text-right">
                         <div className="text-sm text-slate-500 mb-1">Subtotal</div>
                         <div className="text-xl font-bold text-slate-900">
-                          ${((item.sale_price || item.price) * item.quantity).toFixed(2)}
+                          ৳{((item.sale_price || item.price) * item.quantity).toFixed(2)}
                         </div>
                       </div>
                     </div>
@@ -166,7 +166,7 @@ export default function CartPage() {
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between items-center py-2">
                     <span className="text-slate-600">Subtotal</span>
-                    <span className="font-semibold text-slate-900">${total.toFixed(2)}</span>
+                    <span className="font-semibold text-slate-900">৳{total.toFixed(2)}</span>
                   </div>
                 
                   <div className="flex justify-between items-center py-2">
@@ -178,7 +178,7 @@ export default function CartPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-xl font-bold text-slate-900">Total</span>
                       <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        ${total.toFixed(2)}
+                        ৳{total.toFixed(2)}
                       </span>
                     </div>
                   </div>
