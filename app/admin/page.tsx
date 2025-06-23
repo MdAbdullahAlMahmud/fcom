@@ -6,6 +6,8 @@ import { Package, DollarSign, Users, ShoppingCart, Tag, TrendingUp, ArrowUpRight
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
+import { differenceInCalendarDays, isToday } from 'date-fns'
+import Link from 'next/link'
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,6 +28,7 @@ import {
   Tooltip,
   Legend
 } from 'recharts'
+import { Avatar } from '@/components/ui/avatar'
 
 // Utils
 import { formatCurrency } from '@/lib/utils'
@@ -97,12 +100,39 @@ export default function AdminDashboard() {
     dayWiseOrders: []
   })
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
+  const [todaysOrders, setTodaysOrders] = useState<RecentOrder[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showSparkles, setShowSparkles] = useState(false)
+  const [unseenOrderIds, setUnseenOrderIds] = useState<number[]>([])
 
   useEffect(() => {
     fetchDashboardData()
   }, [])
+
+  useEffect(() => {
+    // Filter today's orders
+    setTodaysOrders(recentOrders.filter(order => isToday(new Date(order.created_at))))
+    // Track unseen orders (localStorage MVP)
+    const seen = JSON.parse(localStorage.getItem('seenOrderIds') || '[]')
+    const unseen = recentOrders.filter(order => !seen.includes(order.id)).map(o => o.id)
+    setUnseenOrderIds(unseen)
+  }, [recentOrders])
+
+  const markOrdersAsSeen = () => {
+    const seen = JSON.parse(localStorage.getItem('seenOrderIds') || '[]')
+    const updated = Array.from(new Set([...seen, ...recentOrders.map(o => o.id)]))
+    localStorage.setItem('seenOrderIds', JSON.stringify(updated))
+    setUnseenOrderIds([])
+  }
+
+  const markOrderAsSeen = (orderId: number) => {
+    const seen = JSON.parse(localStorage.getItem('seenOrderIds') || '[]')
+    if (!seen.includes(orderId)) {
+      const updated = [...seen, orderId]
+      localStorage.setItem('seenOrderIds', JSON.stringify(updated))
+      setUnseenOrderIds(unseenOrderIds.filter(id => id !== orderId))
+    }
+  }
 
   const fetchDashboardData = async () => {
     try {
@@ -177,6 +207,11 @@ export default function AdminDashboard() {
           >
             <Sparkles className="h-6 w-6 text-yellow-400" />
           </motion.div>
+          {unseenOrderIds.length > 0 && (
+            <span className="ml-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs animate-pulse">
+              {unseenOrderIds.length} New
+            </span>
+          )}
         </div>
         <div className="text-sm text-muted-foreground">
           Last updated: {format(new Date(), 'MMM d, yyyy h:mm a')}
@@ -190,6 +225,7 @@ export default function AdminDashboard() {
         animate="show"
         className="grid gap-4 md:grid-cols-2 lg:grid-cols-5"
       >
+        {/* Total Products */}
         <motion.div 
           variants={item}
           whileHover={{ scale: 1.02 }}
@@ -227,7 +263,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </motion.div>
-
+        {/* Total Orders */}
         <motion.div variants={item}>
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -245,7 +281,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </motion.div>
-
+        {/* Total Revenue */}
         <motion.div 
           variants={item}
           whileHover={{ scale: 1.02 }}
@@ -276,7 +312,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </motion.div>
-
+        {/* Total Customers */}
         <motion.div variants={item}>
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -294,7 +330,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </motion.div>
-
+        {/* Total Categories */}
         <motion.div variants={item}>
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -312,6 +348,84 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </motion.div>
+      </motion.div>
+
+      {/* Today's Orders Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+      >
+        <Card className="hover:shadow-lg transition-shadow duration-200 border-2 border-blue-400 bg-white/90 mb-6">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-lg font-bold">Today's Orders</CardTitle>
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                {todaysOrders.length} {todaysOrders.length === 1 ? 'Order' : 'Orders'}
+              </span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {todaysOrders.length > 0 ? `${todaysOrders.length} placed today` : 'No orders yet today'}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {todaysOrders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Sparkles className="h-8 w-8 text-blue-200 mb-2" />
+                <div className="text-gray-500">No orders have been placed today yet.</div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-blue-50/50">
+                      <TableHead>Order</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {todaysOrders.map((order, idx) => (
+                      <TableRow
+                        key={order.id}
+                        className={`hover:bg-blue-50/50 ${unseenOrderIds.includes(order.id) ? 'bg-yellow-100/70' : ''}`}
+                      >
+                        <TableCell className="font-medium text-blue-700">
+                          <Link
+                            href={`/admin/orders/${order.id}`}
+                            className="hover:underline text-blue-700"
+                            onClick={() => markOrderAsSeen(order.id)}
+                          >
+                            #{order.order_number}
+                            {unseenOrderIds.includes(order.id) && (
+                              <span className="ml-2 px-1.5 py-0.5 rounded-full bg-yellow-400 text-white text-[10px] font-semibold align-middle animate-pulse">
+                                NEW
+                              </span>
+                            )}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{order.customer_name}</div>
+                            <div className="text-xs text-muted-foreground">{order.customer_email}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium text-green-700">{formatCurrency(order.total_amount)}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-gray-500">{format(new Date(order.created_at), 'h:mm a')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Day-wise Orders Chart */}
@@ -360,9 +474,15 @@ export default function AdminDashboard() {
                     }}
                   />
                   <Legend 
-                    verticalAlign="bottom" 
-                    height={36}
-                    formatter={(value) => format(new Date(value), 'MMM d')}
+                    verticalAlign="bottom"
+                    align="center"
+                    iconType="circle"
+                    wrapperStyle={{ paddingTop: '10px' }}
+                    formatter={(value, entry) => (
+                      <span className="text-xs text-muted-foreground">
+                        {value} ({entry.payload.value})
+                      </span>
+                    )}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -382,14 +502,10 @@ export default function AdminDashboard() {
             <CardTitle className="flex items-center">
               <ShoppingCart className="h-5 w-5 mr-2 text-purple-600" />
               Recent Orders
-              {recentOrders.length > 0 && (
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="ml-2"
-                >
-                  <Gift className="h-5 w-5 text-pink-500" />
-                </motion.div>
+              {unseenOrderIds.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-xs animate-pulse">
+                  {unseenOrderIds.length} New
+                </span>
               )}
             </CardTitle>
           </CardHeader>
@@ -413,7 +529,7 @@ export default function AdminDashboard() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="hover:bg-gray-50/50"
+                      className={`hover:bg-gray-50/50`}
                     >
                       <TableCell className="font-medium">#{order.order_number}</TableCell>
                       <TableCell>
@@ -454,4 +570,4 @@ export default function AdminDashboard() {
       </motion.div>
     </div>
   )
-} 
+}
