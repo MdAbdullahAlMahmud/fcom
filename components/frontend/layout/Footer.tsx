@@ -76,7 +76,9 @@ export default function Footer() {
             {[
               { label: 'Track Order', href: '/track-order' },
               { label: 'About Us', href: '/about' },
-              { label: 'Contact Us', href: '/contact' }
+              { label: 'Contact Us', href: '/contact' },
+              { label: 'Privacy Policy', href: '/privacy' },
+              { label: 'Terms & Conditions', href: '/terms' }
             ].map(({ label, href }) => (
               <li key={label}>
                 <Link
@@ -154,7 +156,6 @@ export default function Footer() {
               {[
                 { label: 'Privacy Policy', href: '/privacy' },
                 { label: 'Terms of Service', href: '/terms' },
-                { label: 'Cookie Policy', href: '/cookies' }
               ].map(({ label, href }) => (
                 <Link
                   key={label}

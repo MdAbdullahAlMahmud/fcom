@@ -397,11 +397,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <Link href="/admin/settings/content">Site Information</Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton 
+                            asChild 
+                            className={cn(
+                              "w-full px-4 py-2 text-sm rounded-lg transition-colors",
+                              isActive('/admin/settings/pages')
+                                ? "bg-slate-900 text-white shadow-sm"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            )}
+                          >
+                            <Link href="/admin/settings/pages" className="flex items-center">
+                              Pages
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
                       </SidebarMenuSub>
                     </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
+
+              <SidebarSeparator className="my-6 mx-4" />
+
+              {/* Removed the old 'Pages' sidebar group and its items */}
+
             </div>
 
             <SidebarFooter className="border-t border-slate-100 mt-auto">
