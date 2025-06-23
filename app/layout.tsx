@@ -4,6 +4,7 @@ import './globals.css'
 import "./tailwind-build.css"
 import { Toaster } from 'sonner'
 import { CartProvider } from '@/contexts/CartContext'
+import { SiteSettingsProvider } from '@/contexts/SiteSettingsContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,10 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <CartProvider>
-          {children}
-        </CartProvider>
-        <Toaster />
+        <SiteSettingsProvider>
+          <CartProvider>
+            {children}
+          </CartProvider>
+          <Toaster />
+        </SiteSettingsProvider>
       </body>
     </html>
   )

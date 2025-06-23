@@ -34,11 +34,13 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import { useSiteSettings } from '@/contexts/SiteSettingsContext'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { toast } = useToast()
+  const settings = useSiteSettings()
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     dashboard: true,
     products: false,
@@ -84,8 +86,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Sidebar className="shadow-lg border-r border-border bg-sidebar h-full min-h-screen" style={{height: '100vh'}}>
           <SidebarContent>
             <div className="flex items-center justify-center h-16 border-b border-border mb-2">
-              <Link href="/admin/dashboard/overview" className="text-xl font-extrabold tracking-tight text-primary hover:text-primary/80 transition-colors">
-                fCommerce
+              <Link href="/admin" className="text-xl font-extrabold tracking-tight text-primary hover:text-primary/80 transition-colors">
+                {settings?.site_name || ''}
               </Link>
             </div>
             <SidebarGroup>
@@ -250,19 +252,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     )}>
                       <SidebarMenuSubItem>
                         <SidebarMenuSubButton asChild href="/admin/settings/content" isActive={isActive('/admin/settings/content')}>
-                          <Link href="/admin/settings/content">Content Management</Link>
+                          <Link href="/admin/settings/content">Site Meta Information</Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild href="/admin/settings/analytics" isActive={isActive('/admin/settings/analytics')}>
-                          <Link href="/admin/settings/analytics">Analytics & Reporting</Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild href="/admin/settings/optimization" isActive={isActive('/admin/settings/optimization')}>
-                          <Link href="/admin/settings/optimization">Optimization & Polish</Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
+                      
                     </SidebarMenuSub>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -270,7 +263,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </SidebarGroup>
             <SidebarSeparator />
             <SidebarFooter>
-              <div className="text-xs text-muted-foreground text-center">&copy; {new Date().getFullYear()} fCommerce</div>
+              <div className="text-xs text-muted-foreground text-center">&copy; {new Date().getFullYear()} {settings?.site_name || 'fCommerce'}</div>
             </SidebarFooter>
           </SidebarContent>
         </Sidebar>
@@ -281,9 +274,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden mr-2" />
               <span className="font-semibold text-lg text-primary">
-                {pathname.split('/').pop()?.split('-').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ') || 'Dashboard'}
+                {settings?.site_name || ''}
               </span>
             </div>
             <div className="flex items-center gap-4">

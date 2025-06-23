@@ -6,6 +6,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { useSiteSettings } from '@/contexts/SiteSettingsContext'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ export default function Header() {
   const [orderNumber, setOrderNumber] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const router = useRouter()
+  const settings = useSiteSettings()
 
   useEffect(() => {
     // Check if user is logged in
@@ -45,7 +47,7 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="text-2xl font-bold">
-            fCommerce
+            {settings?.site_name || ''}
           </Link>
 
           {/* Navigation */}
@@ -124,4 +126,4 @@ export default function Header() {
       </div>
     </header>
   )
-} 
+}

@@ -3389,6 +3389,10 @@ body {
   opacity: 0.2;
 }
 
+.opacity-25 {
+  opacity: 0.25;
+}
+
 .opacity-50 {
   opacity: 0.5;
 }
@@ -3399,6 +3403,10 @@ body {
 
 .opacity-70 {
   opacity: 0.7;
+}
+
+.opacity-75 {
+  opacity: 0.75;
 }
 
 .opacity-90 {
