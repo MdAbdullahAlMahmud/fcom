@@ -295,7 +295,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+              <div className="text-2xl font-bold">৳{stats.totalRevenue.toLocaleString()}</div>
               <div className="flex items-center text-xs text-muted-foreground mt-1">
                 <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
                 <span>Total earnings</span>
@@ -413,7 +413,7 @@ export default function AdminDashboard() {
                             <div className="text-xs text-muted-foreground">{order.customer_email}</div>
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium text-green-700">{formatCurrency(order.total_amount)}</TableCell>
+                        <TableCell className="font-medium text-green-700">৳{order.total_amount.toLocaleString()}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
                         </TableCell>
@@ -551,7 +551,7 @@ export default function AdminDashboard() {
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{formatCurrency(order.total_amount)}</TableCell>
+                      <TableCell className="font-medium">৳{order.total_amount.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(order.status)}>
                           {order.status}
