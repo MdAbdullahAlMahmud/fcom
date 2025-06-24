@@ -151,6 +151,15 @@ export default function ProductsPage() {
                   >
                     {product.is_active ? 'Active' : 'Inactive'}
                   </span>
+                  <span
+                    className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                      product.is_featured
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {product.is_featured ? 'Featured' : 'Regular'}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">

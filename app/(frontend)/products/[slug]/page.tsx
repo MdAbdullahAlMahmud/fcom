@@ -33,20 +33,22 @@ interface RelatedProduct extends RowDataPacket {
   image_url: string
 }
 
-async function getProduct(slug: string): Promise<ProductWithImages | null> {
+async function getProduct(slug: string): Promise<ProductWithImages & { html?: string } | null> {
   try {
     const products = await query(`
       SELECT 
         p.*,
         c.name as category_name,
         c.slug as category_slug,
-        GROUP_CONCAT(pi.image_url) as images
+        GROUP_CONCAT(pi.image_url) as images,
+        ph.html as product_html
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id
+      LEFT JOIN product_html ph ON p.id = ph.product_id
       WHERE p.slug = ? AND p.is_active = 1
       GROUP BY p.id
-    `, [slug]) as Product[]
+    `, [slug]) as (Product & { product_html?: string })[]
 
     const product = products[0]
     if (!product) return null
@@ -56,7 +58,8 @@ async function getProduct(slug: string): Promise<ProductWithImages | null> {
     
     return {
       ...product,
-      images
+      images,
+      html: product.product_html || undefined
     }
   } catch (error) {
     console.error('Error fetching product:', error)
@@ -98,12 +101,13 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   const relatedProducts = await getRelatedProducts(product.category_id, product.id)
   const discount = product.sale_price ? Math.round(((product.price - product.sale_price) / product.price) * 100) : 0
-  const savings = product.sale_price ? (product.price - product.sale_price).toFixed(2) : 0
+  const savings = product.sale_price ? (product.price - product.sale_price).toFixed(2) : '0'
 
   return <ProductDetails 
-    product={product} 
+    product={product as any} 
     relatedProducts={relatedProducts} 
     discount={discount} 
     savings={savings} 
+    html={product.html || ''}
   />
-} 
+}
