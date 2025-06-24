@@ -64,7 +64,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   })
 
   const isActive = (path: string) => pathname === path
-  const isActiveGroup = (paths: string[]) => paths.some(path => pathname.startsWith(path))
+  const isActiveGroup = (paths: string[]) => pathname ? paths.some(path => pathname.startsWith(path)) : false
 
   const toggleMenu = (menu: string) => {
     setExpandedMenus(prev => ({
@@ -100,15 +100,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Sidebar className="border-r border-slate-200 bg-white shadow-sm max-w-[260px] w-full">
           <SidebarContent className="flex flex-col h-full">
 
-            <div className="flex items-center h-14 px-4 border-b border-slate-200 bg-white">
+            <div className="flex items-center h-24 px-4 border-b border-slate-200 bg-white">
               <Link href="/admin" className="flex items-center">
                 <img
                   src="/dokan_v2.png"
                   alt="Dokan 2.0 Logo"
-                  className="h-20 w-auto"
-                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://ui-avatars.com/api/?name=Dokan+2.0&background=1e293b&color=fff&size=32'; }}
+                  className="h-20 w-20 rounded-2xl shadow-lg p-1 border-2 border-blue-400 bg-white transition-transform duration-300 hover:scale-105"
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://ui-avatars.com/api/?name=Dokan+2.0&background=1e293b&color=fff&size=64'; }}
                 />
-                <span className="ml-2 text-sm font-semibold text-slate-800">Admin Panel</span>
+                <span className="ml-4 text-lg font-bold text-black drop-shadow-sm tracking-wide">Admin Panel</span>
               </Link>
             </div>
 
