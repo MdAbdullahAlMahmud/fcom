@@ -171,10 +171,12 @@ export default function OrdersPage() {
               <TableHead>Order #</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Customer</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Total</TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>Payment Method</TableHead>
+            <TableHead>Payment</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -198,6 +200,11 @@ export default function OrdersPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>{formatCurrency(order.total_amount)}</TableCell>
+                <TableCell>{order.shipping_phone || '-'}</TableCell>
+                <TableCell>
+                  {/* Use payment_method_display from backend for all cases */}
+                  {order.payment_method_display || ''}
+                </TableCell>
                 <TableCell>
                   <Badge
                     className={

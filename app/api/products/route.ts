@@ -50,10 +50,10 @@ export async function GET(request: Request) {
     const [countResult] = await query(
       `SELECT COUNT(*) as total FROM products p ${whereSQL}`,
       params
-    )
+    ) as any[]
     const total = countResult.total
 
-    // Get products with category and images
+    // Get products with category, images, and HTML
     const products = await query(
       `SELECT 
         p.*,
@@ -64,16 +64,18 @@ export async function GET(request: Request) {
             pi.image_url, ':', 
             COALESCE(pi.alt_text, '')
           )
-        ) as images
+        ) as images,
+        ph.html as product_html
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id
+      LEFT JOIN product_html ph ON p.id = ph.product_id
       ${whereSQL}
       GROUP BY p.id
       ORDER BY p.created_at DESC
       LIMIT ? OFFSET ?`,
       [...params, limit, offset]
-    )
+    ) as any[]
 
     // Transform the concatenated images string into an array of objects
     const transformedProducts = products.map((product: any) => ({
@@ -85,7 +87,8 @@ export async function GET(request: Request) {
           image_url,
           alt_text: alt_text || null
         }
-      }) : []
+      }) : [],
+      html: product.product_html ?? undefined
     }))
 
     return NextResponse.json({
@@ -109,7 +112,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const payload = await verifyAuth()
-    if (payload.role !== 'admin') {
+    if (!payload || payload.role !== 'admin') {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 403 }
@@ -130,7 +133,8 @@ export async function POST(request: Request) {
       category_id,
       is_active,
       is_featured,
-      images
+      images,
+      html // <-- new field for custom HTML
     } = body
 
     // Validate required fields
@@ -148,7 +152,7 @@ export async function POST(request: Request) {
     const [existingProduct] = await query(
       'SELECT id FROM products WHERE slug = ?',
       [slug]
-    )
+    ) as any[]
 
     if (existingProduct) {
       return NextResponse.json(
@@ -156,6 +160,7 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
 
     const result = await transaction(async (connection) => {
       // Insert product
@@ -183,6 +188,14 @@ export async function POST(request: Request) {
       )
 
       const productId = (productResult as any).insertId
+
+      // Insert product HTML if provided
+      if (typeof html === 'string' && html.trim().length > 0) {
+        await connection.execute(
+          `INSERT INTO product_html (product_id, html) VALUES (?, ?)`,
+          [productId, html]
+        )
+      }
 
       // Insert images
       if (images && images.length > 0) {

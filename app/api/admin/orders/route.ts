@@ -43,18 +43,20 @@ export async function GET(request: Request) {
     const whereSQL = whereClause.length > 0 ? `WHERE ${whereClause.join(' AND ')}` : ''
 
     // Get total count
-    const [countResult] = await query(
+    const countRows = await query(
       `SELECT COUNT(*) as total FROM orders o ${whereSQL}`,
       params
-    )
-    const total = countResult.total
+    ) as any[];
+    const total = countRows[0]?.total || 0;
 
-    // Get orders with customer and item details
+    // Get orders with customer, shipping phone, and item details
+
     const sqlQuery = `
       SELECT 
         o.*, 
         u.name as user_name, 
         u.email as user_email,
+        sa.phone as shipping_phone,
         GROUP_CONCAT(
           CONCAT(
             oi.id, ':', 
@@ -66,33 +68,54 @@ export async function GET(request: Request) {
         ) as items_data
       FROM orders o
       LEFT JOIN customers u ON o.user_id = u.id
+      LEFT JOIN addresses sa ON o.shipping_address_id = sa.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
       ${whereSQL}
       GROUP BY o.id
       ORDER BY o.created_at DESC
       LIMIT ? OFFSET ?
-    `
-    const ordersData: any[] = await query(sqlQuery, [...params, limit, offset])
+    `;
+    const ordersData = await query(sqlQuery, [...params, limit, offset]) as any[];
 
     const orders = ordersData.map((order) => {
       // Transform the concatenated items string into an array of objects
       const items = order.items_data ? order.items_data.split(',').map((item: string) => {
-        const [id, product_id, product_name, quantity, unit_price] = item.split(':')
+        const [id, product_id, product_name, quantity, unit_price] = item.split(':');
         return {
           id: parseInt(id),
           product_id: parseInt(product_id),
           product_name,
           quantity: parseInt(quantity),
           unit_price: parseFloat(unit_price)
+        };
+      }) : [];
+
+      // Compose payment method display for online payments
+      let payment_method_display = '';
+      if (order.payment_method === 'cash_on_delivery') {
+        payment_method_display = 'Cash on Delivery';
+      } else if (order.payment_method && order.payment_method !== 'cash_on_delivery') {
+        // For online payments, show notes + transaction id if available
+        let notes = order.notes ? String(order.notes) : '';
+        let transId = order.tracking_id ? String(order.tracking_id) : '';
+        if (notes && transId) {
+          payment_method_display = `${notes} - ${transId}`;
+        } else if (notes) {
+          payment_method_display = notes;
+        } else if (transId) {
+          payment_method_display = transId;
+        } else {
+          payment_method_display = 'Online Payment';
         }
-      }) : []
+      }
 
       return {
         ...order,
-        items
-      }
-    })
+        items,
+        payment_method_display,
+      };
+    });
 
     return NextResponse.json({
       orders,

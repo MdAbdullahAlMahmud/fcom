@@ -47,7 +47,7 @@ export default function EditProductPage({
 }) {
   const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
-  const [product, setProduct] = useState<Product | null>(null)
+  const [product, setProduct] = useState<Product & { html?: string } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([])
 
@@ -90,6 +90,7 @@ export default function EditProductPage({
   }
 
   // When product is loaded, set initial images
+  // Set initial images and html
   useEffect(() => {
     if (product) {
       const previews: ImagePreview[] = (product.images || []).slice(0, 4).map((img, idx) => ({
@@ -97,8 +98,12 @@ export default function EditProductPage({
         url: img.image_url
       }))
       setSelectedImages(previews)
+      setHtml(product.html || '')
     }
   }, [product])
+
+  // State for HTML
+  const [html, setHtml] = useState<string>('')
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0]
@@ -165,7 +170,9 @@ export default function EditProductPage({
           sale_price: product.sale_price ? parseFloat(product.sale_price.toString()) : null,
           stock_quantity: parseInt(product.stock_quantity.toString()),
           weight: product.weight ? parseFloat(product.weight.toString()) : null,
-          category_id: product.category_id ? parseInt(product.category_id.toString()) : null
+          category_id: product.category_id ? parseInt(product.category_id.toString()) : null,
+          // When HTML is empty or contains only whitespace, explicitly set to null to clear it in the database
+          html: html && html.trim().length > 0 ? html : null
         }),
         credentials: 'include'
       })
@@ -199,6 +206,26 @@ export default function EditProductPage({
 
       <div className="bg-white rounded-lg shadow p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex items-center space-x-2">
+              <input
+                id="is_active"
+                type="checkbox"
+                checked={product.is_active}
+                onChange={e => setProduct({ ...product, is_active: e.target.checked })}
+              />
+              <Label htmlFor="is_active">Active</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                id="is_featured"
+                type="checkbox"
+                checked={product.is_featured}
+                onChange={e => setProduct({ ...product, is_featured: e.target.checked })}
+              />
+              <Label htmlFor="is_featured">Featured</Label>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -356,6 +383,17 @@ export default function EditProductPage({
             <p className="text-sm text-gray-500">
               Upload up to 4 product images. Click on an image to remove it.
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="html">Custom HTML Section (optional)</Label>
+            <Textarea
+              id="html"
+              value={html}
+              onChange={e => setHtml(e.target.value)}
+              placeholder="Paste or write any HTML code to show above product details."
+              rows={6}
+            />
           </div>
 
           <div className="flex justify-end space-x-4">

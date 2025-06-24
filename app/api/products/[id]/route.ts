@@ -37,14 +37,16 @@ export async function GET(
             pi.image_url, ':', 
             COALESCE(pi.alt_text, '')
           )
-        ) as images
+        ) as images,
+        ph.html as product_html
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id
+      LEFT JOIN product_html ph ON p.id = ph.product_id
       WHERE p.id = ?
       GROUP BY p.id`,
       [params.id]
-    )
+    ) as any[]
 
     if (!product) {
       return NextResponse.json(
@@ -63,7 +65,8 @@ export async function GET(
           image_url,
           alt_text: alt_text || null
         }
-      }) : []
+      }) : [],
+      html: product.product_html ?? undefined
     }
 
     return NextResponse.json(transformedProduct)
@@ -103,7 +106,8 @@ export async function PUT(
       category_id,
       is_active,
       is_featured,
-      images
+      images,
+      html // <-- new field for custom HTML
     } = body
 
     // Validate required fields
@@ -121,7 +125,7 @@ export async function PUT(
     const [existingProduct] = await query(
       'SELECT id FROM products WHERE slug = ? AND id != ?',
       [slug, params.id]
-    )
+    ) as any[]
 
     if (existingProduct) {
       return NextResponse.json(
@@ -165,6 +169,29 @@ export async function PUT(
           params.id
         ]
       )
+
+      // Upsert product HTML
+      if (typeof html === 'string') {
+        // Try update first
+        const [result] = await connection.execute(
+          `UPDATE product_html SET html = ? WHERE product_id = ?`,
+          [html, params.id]
+        )
+        // If no row was updated, insert
+        // @ts-ignore
+        if (result.affectedRows === 0) {
+          await connection.execute(
+            `INSERT INTO product_html (product_id, html) VALUES (?, ?)`,
+            [params.id, html]
+          )
+        }
+      } else if (html === null) {
+        // If html is null, delete the row so the field is cleared
+        await connection.execute(
+          'DELETE FROM product_html WHERE product_id = ?',
+          [params.id]
+        )
+      }
 
       // Delete existing images
       await connection.execute('DELETE FROM product_images WHERE product_id = ?', [params.id])
@@ -234,4 +261,4 @@ export async function DELETE(
       { status: 500 }
     )
   }
-} 
+}

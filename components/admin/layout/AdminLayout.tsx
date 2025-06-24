@@ -19,15 +19,15 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton
 } from "@/components/ui/sidebar"
-import { 
-  Home, 
-  ShoppingCart, 
-  Users, 
-  FileText, 
-  Settings, 
-  DollarSign, 
-  ChevronDown, 
-  LogOut, 
+import {
+  Home,
+  ShoppingCart,
+  Users,
+  FileText,
+  Settings,
+  DollarSign,
+  ChevronDown,
+  LogOut,
   Tags,
   Bell,
   Search,
@@ -60,7 +60,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     products: false,
     orders: false,
     customers: false,
-    settings: false
+    settings: false,
+    bkashNagad: false
   })
 
   const isActive = (path: string) => pathname === path
@@ -99,16 +100,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Sidebar */}
         <Sidebar className="border-r border-slate-200 bg-white shadow-sm max-w-[260px] w-full">
           <SidebarContent className="flex flex-col h-full">
-
-            <div className="flex items-center h-14 px-4 border-b border-slate-200 bg-white">
+            <div className="flex items-center h-16 px-4 border-b border-slate-200 bg-white">
               <Link href="/admin" className="flex items-center">
                 <img
                   src="/dokan_v2.png"
                   alt="Dokan 2.0 Logo"
-                  className="h-20 w-auto"
+                  className="h-10 w-auto"
                   onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://ui-avatars.com/api/?name=Dokan+2.0&background=1e293b&color=fff&size=32'; }}
                 />
-                <span className="ml-2 text-sm font-semibold text-slate-800">Admin Panel</span>
+                <span className="ml-2 text-sm font-medium text-slate-800">Admin Panel</span>
               </Link>
             </div>
 
@@ -121,12 +121,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <SidebarMenu className="px-2 space-y-1">
                     {/* Dashboard */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        asChild 
+                      <SidebarMenuButton
+                        asChild
                         className={cn(
                           "w-full justify-start px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                          isActive('/admin') 
-                            ? "bg-blue-50 text-blue-700 shadow-sm" 
+                          isActive('/admin')
+                            ? "bg-blue-50 text-blue-700 shadow-sm"
                             : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                         )}
                       >
@@ -139,12 +139,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                     {/* Products */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton 
+                      <SidebarMenuButton
                         onClick={() => toggleMenu('products')}
                         className={cn(
                           "w-full justify-between px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                          isActiveGroup(['/admin/products']) 
-                            ? "bg-blue-50 text-blue-700 shadow-sm" 
+                          isActiveGroup(['/admin/products'])
+                            ? "bg-blue-50 text-blue-700 shadow-sm"
                             : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                         )}
                       >
@@ -157,14 +157,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           expandedMenus.products ? "rotate-180" : ""
                         )} />
                       </SidebarMenuButton>
-                      
+                      {/* Products Submenu */}
                       <SidebarMenuSub className={cn(
                         "ml-7 mt-1 space-y-1 transition-all duration-300",
                         expandedMenus.products ? "max-h-48 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
                       )}>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton 
-                            asChild 
+                          <SidebarMenuSubButton
+                            asChild
                             className={cn(
                               "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
                               isActive('/admin/products/listing')
@@ -176,8 +176,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton 
-                            asChild 
+                          <SidebarMenuSubButton
+                            asChild
                             className={cn(
                               "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
                               isActive('/admin/products/create')
@@ -191,55 +191,105 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       </SidebarMenuSub>
                     </SidebarMenuItem>
 
+                    {/* bKash/Nagad Panel Group */}
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => toggleMenu('bkashNagad')}
+                        className={cn(
+                          "w-full justify-between px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                          isActiveGroup(['/admin/bkash-nagad'])
+                            ? "bg-blue-50 text-blue-700 shadow-sm"
+                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                        )}
+                      >
+                        <div className="flex items-center">
+                          <DollarSign className="w-4 h-4 mr-3 flex-shrink-0" />
+                          <span className="truncate">Payment</span>
+                        </div>
+                        <ChevronDown className={cn(
+                          "h-4 w-4 transition-transform duration-200 flex-shrink-0",
+                          expandedMenus.bkashNagad ? "rotate-180" : ""
+                        )} />
+                      </SidebarMenuButton>
+                      <SidebarMenuSub className={cn(
+                        "ml-7 mt-1 space-y-1 transition-all duration-300",
+                        expandedMenus.bkashNagad ? "max-h-48 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+                      )}>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            asChild
+                            className={cn(
+                              "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
+                              isActive('/admin/bkash-nagad/account-settings')
+                                ? "bg-slate-200 text-slate-800 font-medium"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            )}
+                          >
+                            <Link href="/admin/bkash-nagad/account-settings">Account Settings</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            asChild
+                            className={cn(
+                              "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
+                              isActive('/admin/bkash-nagad/transactions')
+                                ? "bg-slate-200 text-slate-800 font-medium"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            )}
+                          >
+                            <Link href="/admin/bkash-nagad/transactions">Transactions</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </SidebarMenuItem>
+
                     {/* Categories */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        asChild 
+                      <SidebarMenuButton
+                        asChild
                         className={cn(
                           "w-full justify-start px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                          isActive('/admin/categories') 
-                            ? "bg-blue-50 text-blue-700 shadow-sm" 
+                          isActive('/admin/categories')
+                            ? "bg-blue-50 text-blue-700 shadow-sm"
                             : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                         )}
                       >
                         <Link href="/admin/categories" className="flex items-center">
                           <Tags className="w-4 h-4 mr-3 flex-shrink-0" />
-                          <span className="truncate">Categories</span>
+                          Categories
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
 
                     {/* Orders */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton 
+                      <SidebarMenuButton
                         onClick={() => toggleMenu('orders')}
                         className={cn(
                           "w-full justify-between px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                          isActiveGroup(['/admin/orders']) 
-                            ? "bg-blue-50 text-blue-700 shadow-sm" 
+                          isActiveGroup(['/admin/orders'])
+                            ? "bg-blue-50 text-blue-700 shadow-sm"
                             : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                         )}
                       >
-                        <div className="flex items-center truncate">
+                        <div className="flex items-center">
                           <FileText className="w-4 h-4 mr-3 flex-shrink-0" />
                           <span className="truncate">Orders</span>
-                          <Badge variant="secondary" className="ml-2 text-xs bg-orange-100 text-orange-700 border-orange-200 flex-shrink-0">
-                            8
-                          </Badge>
                         </div>
                         <ChevronDown className={cn(
                           "h-4 w-4 transition-transform duration-200 flex-shrink-0",
                           expandedMenus.orders ? "rotate-180" : ""
                         )} />
                       </SidebarMenuButton>
-                      
+
                       <SidebarMenuSub className={cn(
                         "ml-7 mt-1 space-y-1 transition-all duration-300",
                         expandedMenus.orders ? "max-h-48 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
                       )}>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton 
-                            asChild 
+                          <SidebarMenuSubButton
+                            asChild
                             className={cn(
                               "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
                               isActive('/admin/orders/listing')
@@ -251,8 +301,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton 
-                            asChild 
+                          <SidebarMenuSubButton
+                            asChild
                             className={cn(
                               "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
                               isActive('/admin/orders/status')
@@ -264,8 +314,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton 
-                            asChild 
+                          <SidebarMenuSubButton
+                            asChild
                             className={cn(
                               "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
                               isActive('/admin/orders/shipping')
@@ -281,12 +331,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                     {/* Customers */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton 
+                      <SidebarMenuButton
                         onClick={() => toggleMenu('customers')}
                         className={cn(
                           "w-full justify-between px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                          isActiveGroup(['/admin/customers']) 
-                            ? "bg-blue-50 text-blue-700 shadow-sm" 
+                          isActiveGroup(['/admin/customers'])
+                            ? "bg-blue-50 text-blue-700 shadow-sm"
                             : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                         )}
                       >
@@ -299,14 +349,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           expandedMenus.customers ? "rotate-180" : ""
                         )} />
                       </SidebarMenuButton>
-                      
+
                       <SidebarMenuSub className={cn(
                         "ml-7 mt-1 space-y-1 transition-all duration-300",
                         expandedMenus.customers ? "max-h-48 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
                       )}>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton 
-                            asChild 
+                          <SidebarMenuSubButton
+                            asChild
                             className={cn(
                               "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
                               isActive('/admin/customers/listing')
@@ -318,8 +368,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton 
-                            asChild 
+                          <SidebarMenuSubButton
+                            asChild
                             className={cn(
                               "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
                               isActive('/admin/customers/create')
@@ -343,33 +393,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   System
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu className="px-2 space-y-1">
-                    {/* Payment Accounts */}
-                    <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        asChild 
-                        className={cn(
-                          "w-full justify-start px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                          isActive('/admin/payment-accounts') 
-                            ? "bg-blue-50 text-blue-700 shadow-sm" 
-                            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                        )}
-                      >
-                        <Link href="/admin/payment-accounts" className="flex items-center">
-                          <DollarSign className="w-4 h-4 mr-3 flex-shrink-0" />
-                          <span className="truncate">Payment Accounts</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-
+                  <SidebarMenu className="px-2 space-y-1">                    
                     {/* Settings */}
                     <SidebarMenuItem>
-                      <SidebarMenuButton 
+                      <SidebarMenuButton
                         onClick={() => toggleMenu('settings')}
                         className={cn(
                           "w-full justify-between px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                          isActiveGroup(['/admin/settings']) 
-                            ? "bg-blue-50 text-blue-700 shadow-sm" 
+                          isActiveGroup(['/admin/settings'])
+                            ? "bg-blue-50 text-blue-700 shadow-sm"
                             : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                         )}
                       >
@@ -382,14 +414,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           expandedMenus.settings ? "rotate-180" : ""
                         )} />
                       </SidebarMenuButton>
-                      
+
                       <SidebarMenuSub className={cn(
                         "ml-7 mt-1 space-y-1 transition-all duration-300",
                         expandedMenus.settings ? "max-h-48 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
                       )}>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton 
-                            asChild 
+                          <SidebarMenuSubButton
+                            asChild
                             className={cn(
                               "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
                               isActive('/admin/settings/content')
@@ -401,8 +433,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton 
-                            asChild 
+                          <SidebarMenuSubButton
+                            asChild
                             className={cn(
                               "w-full px-3 py-1.5 text-sm rounded-md transition-colors truncate",
                               isActive('/admin/settings/pages')
@@ -447,7 +479,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 hidden sm:flex">
                 <Search className="w-4 h-4" />
               </Button>
-              
+
               <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 relative">
                 <Bell className="w-4 h-4" />
                 <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
@@ -468,16 +500,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <DropdownMenuLabel className="text-xs font-medium">My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-sm">
-                    <User className="w-3.5 h-3.5 mr-2" />
+                    <User className="w-4 h-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem className="text-sm">
-                    <Settings className="w-3.5 h-3.5 mr-2" />
+                    <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-sm text-red-600 focus:text-red-600">
-                    <LogOut className="w-3.5 h-3.5 mr-2" />
+                    <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>

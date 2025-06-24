@@ -39,7 +39,7 @@ export default function CreateProductPage() {
     name: '',
     description: '',
     short_description: '',
-    sku: '',
+sku: '',
     price: '',
     sale_price: '',
     stock_quantity: '',
@@ -47,7 +47,8 @@ export default function CreateProductPage() {
     dimensions: '',
     category_id: '',
     is_active: true,
-    is_featured: false
+    is_featured: false,
+    html: '' // New field for custom HTML
   })
 
   useEffect(() => {
@@ -150,7 +151,8 @@ export default function CreateProductPage() {
           sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
           stock_quantity: parseInt(formData.stock_quantity),
           weight: formData.weight ? parseFloat(formData.weight) : null,
-          category_id: formData.category_id ? parseInt(formData.category_id) : null
+          category_id: formData.category_id ? parseInt(formData.category_id) : null,
+          html: formData.html && formData.html.trim().length > 0 ? formData.html : null
         })
       })
 
@@ -177,6 +179,7 @@ export default function CreateProductPage() {
 
       <div className="bg-white rounded-lg shadow p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
+
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -195,6 +198,28 @@ export default function CreateProductPage() {
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                 required
               />
+            </div>
+          </div>
+
+          {/* Active/Featured checkboxes */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex items-center space-x-2">
+              <input
+                id="is_active"
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
+              />
+              <Label htmlFor="is_active">Active</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                id="is_featured"
+                type="checkbox"
+                checked={formData.is_featured}
+                onChange={e => setFormData({ ...formData, is_featured: e.target.checked })}
+              />
+              <Label htmlFor="is_featured">Featured</Label>
             </div>
           </div>
 
@@ -336,6 +361,17 @@ export default function CreateProductPage() {
             <p className="text-sm text-gray-500">
               Upload up to 4 product images. Click on an image to remove it.
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="html">Custom HTML Section (optional)</Label>
+            <Textarea
+              id="html"
+              value={formData.html}
+              onChange={e => setFormData({ ...formData, html: e.target.value })}
+              placeholder="Paste or write any HTML code to show above product details."
+              rows={6}
+            />
           </div>
 
           <div className="flex justify-end space-x-4">

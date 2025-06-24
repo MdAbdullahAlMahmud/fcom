@@ -34,10 +34,11 @@ interface RelatedProduct extends RowDataPacket {
 }
 
 interface ProductDetailsProps {
-  product: Product
+  product: Product & { html?: string }
   relatedProducts: RelatedProduct[]
   discount: number
   savings: string
+  html?: string
 }
 
 function ProductImages({ product, discount }: { product: Product, discount: number }) {
@@ -100,9 +101,17 @@ function ProductImages({ product, discount }: { product: Product, discount: numb
   )
 }
 
-export default function ProductDetails({ product, relatedProducts, discount, savings }: ProductDetailsProps) {
+export default function ProductDetails({ product, relatedProducts, discount, savings, html }: ProductDetailsProps) {
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Custom HTML Section (if present) */}
+      {html && html.trim().length > 0 && (
+        <div className="mb-8">
+          {/* eslint-disable-next-line react/no-danger */}
+          <div dangerouslySetInnerHTML={{ __html: html }} />
+        </div>
+      )}
+
       {/* Main Product Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
         {/* Product Images */}
@@ -114,11 +123,7 @@ export default function ProductDetails({ product, relatedProducts, discount, sav
             <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>Category: {product.category_name}</span>
-              <span>•</span>
-              <div className="flex items-center">
-                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="ml-1">4.8 (120 reviews)</span>
-              </div>
+              
             </div>
           </div>
 
@@ -157,12 +162,6 @@ export default function ProductDetails({ product, relatedProducts, discount, sav
                   }} 
                 />
               </Suspense>
-              <button className="flex-1 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
-                Buy Now
-              </button>
-              <button className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <Heart className="w-6 h-6" />
-              </button>
             </div>
           </div>
 
@@ -182,25 +181,38 @@ export default function ProductDetails({ product, relatedProducts, discount, sav
             </div>
           </div>
 
+            <div className="text-gray-700 leading-relaxed space-y-2">
+  {(product.description || 'No description available.')
+    .replace(/\\n/g, '\n') // 🔥 This is the key: convert literal "\n" to real newline
+    .split('\n')
+    .filter(line => line.trim().length > 0)
+    .map((line, index) => (
+      <p key={index}>{line}</p>
+    ))}
+</div>
+
+
+
+
           {/* Specifications */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Specifications</h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">Material</p>
-                <p className="font-medium">{product.material || 'Premium Quality'}</p>
+                <p className="font-medium">{product.material || ''}</p>
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">Weight</p>
-                <p className="font-medium">{product.weight || '0.5 kg'}</p>
+                <p className="font-medium">{product.weight || ''}</p>
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">Dimensions</p>
-                <p className="font-medium">{product.dimensions || '10 x 20 x 5 cm'}</p>
+                <p className="font-medium">{product.dimensions || ''}</p>
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">SKU</p>
-                <p className="font-medium">{product.sku || 'SKU123456'}</p>
+                <p className="font-medium">{product.sku || ''}</p>
               </div>
             </div>
           </div>
@@ -208,66 +220,7 @@ export default function ProductDetails({ product, relatedProducts, discount, sav
       </div>
 
       {/* Detailed Description Section */}
-      <div className="border-t pt-16">
-        <div className="max-w-4xl mx-auto">
-          {/* Key Features */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-6">Key Features</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                <p className="text-gray-600">Premium quality materials for lasting durability</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                <p className="text-gray-600">Ergonomic design for maximum comfort</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                <p className="text-gray-600">Easy to maintain and clean</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                <p className="text-gray-600">Suitable for all weather conditions</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Detailed Description */}
-          <div className="space-y-8">
-            <h2 className="text-2xl font-bold mb-6">Product Description</h2>
-            <div className="prose prose-lg max-w-none space-y-8">
-              <p className="text-gray-600 text-lg">{product.description}</p>
-              
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-gray-900">Design & Quality</h3>
-                <p className="text-gray-600">
-                  Crafted with precision and attention to detail, this product combines style with functionality. 
-                  The premium materials ensure longevity while maintaining a sophisticated appearance. 
-                  Every aspect has been carefully considered to provide the best user experience.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-gray-900">Materials & Construction</h3>
-                <p className="text-gray-600">
-                  Built using high-grade materials that are both durable and environmentally conscious. 
-                  The construction process follows strict quality control measures to ensure consistency 
-                  and reliability in every piece.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-gray-900">Care Instructions</h3>
-                <p className="text-gray-600">
-                  To maintain the product's quality and appearance, we recommend following these care instructions. 
-                  Regular maintenance will ensure your product remains in excellent condition for years to come.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (
