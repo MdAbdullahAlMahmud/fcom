@@ -185,6 +185,12 @@ export async function PUT(
             [params.id, html]
           )
         }
+      } else if (html === null) {
+        // If html is null, delete the row so the field is cleared
+        await connection.execute(
+          'DELETE FROM product_html WHERE product_id = ?',
+          [params.id]
+        )
       }
 
       // Delete existing images
@@ -255,4 +261,4 @@ export async function DELETE(
       { status: 500 }
     )
   }
-} 
+}

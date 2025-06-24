@@ -171,6 +171,7 @@ export default function EditProductPage({
           stock_quantity: parseInt(product.stock_quantity.toString()),
           weight: product.weight ? parseFloat(product.weight.toString()) : null,
           category_id: product.category_id ? parseInt(product.category_id.toString()) : null,
+          // When HTML is empty or contains only whitespace, explicitly set to null to clear it in the database
           html: html && html.trim().length > 0 ? html : null
         }),
         credentials: 'include'
