@@ -129,14 +129,14 @@ export default function ProductsPage() {
                   {product.sale_price ? (
                     <div>
                       <span className="line-through text-gray-500">
-                        ${Number(product.price).toFixed(2)}
+                        ৳{Number(product.price).toFixed(2)}
                       </span>
                       <span className="ml-2 text-red-600">
-                        ${Number(product.sale_price).toFixed(2)}
+                        ৳{Number(product.sale_price).toFixed(2)}
                       </span>
                     </div>
                   ) : (
-                    `$${Number(product.price).toFixed(2)}`
+                    `৳${Number(product.price).toFixed(2)}`
                   )}
                 </TableCell>
                 <TableCell>{product.stock_quantity}</TableCell>
@@ -177,4 +177,4 @@ export default function ProductsPage() {
       </div>
     </div>
   )
-} 
+}

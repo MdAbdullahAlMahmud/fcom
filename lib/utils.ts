@@ -13,12 +13,18 @@ export function formatDate(date: string | Date) {
   })
 }
 
-export function formatCurrency(amount: number) {
+export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
-  }).format(amount)
+    currency: 'BDT',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
+    .format(amount)
+    .replace('BDT', '৳')
 }
+
+
 
 export function generateOTP(): number {
   // Generate a 6-digit OTP
