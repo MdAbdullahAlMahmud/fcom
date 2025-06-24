@@ -46,8 +46,8 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold">
-            {settings?.site_name || ''}
+          <Link href="/" className="flex items-center gap-2">
+            <img src="/dokan_v2.png" alt="Dokan 2.0 Logo" className="h-10 w-auto" />
           </Link>
 
           {/* Navigation */}
@@ -101,17 +101,17 @@ export default function Header() {
                     <User className="h-6 w-6" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => router.push('/profile')}>
+                <DropdownMenuContent align="end" className="min-w-[180px] whitespace-nowrap">
+                  <DropdownMenuItem className="whitespace-nowrap" onClick={() => router.push('/profile')}>
                     My Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/my-orders')}>
+                  <DropdownMenuItem className="whitespace-nowrap" onClick={() => router.push('/my-orders')}>
                     My Orders
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/change-password')}>
+                  <DropdownMenuItem className="whitespace-nowrap" onClick={() => router.push('/change-password')}>
                     Change Password
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem className="whitespace-nowrap" onClick={handleLogout}>
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
