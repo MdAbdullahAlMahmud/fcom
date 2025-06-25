@@ -4,9 +4,12 @@ import { useCart } from '@/contexts/CartContext'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Heart } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'react-hot-toast'
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total } = useCart()
+  const router = useRouter()
 
   if (items.length === 0) {
     return (
@@ -185,13 +188,36 @@ export default function CartPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <Link
-                    href="/checkout"
+                  <button
                     className="block w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center px-8 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                    onClick={async () => {
+                      if (items.length === 0) return;
+                      console.log('Proceed to Checkout clicked. Cart items:', items);
+                      try {
+                        const res = await fetch('/api/products/types-check', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ ids: items.map(i => i.id) })
+                        });
+                        console.log('API response status:', res.status);
+                        if (!res.ok) throw new Error('Failed to check product types');
+                        const data = await res.json();
+                        console.log('Product types from API:', data.types);
+                        const types = new Set(data.types);
+                        if (types.size > 1) {
+                          toast.error('You cannot checkout both digital and physical products at once.');
+                          return;
+                        }
+                        router.push('/checkout');
+                      } catch (e) {
+                        console.error('Error verifying product types:', e);
+                        toast.error('Could not verify product types. Please try again.');
+                        return;
+                      }
+                    }}
                   >
                     Proceed to Checkout
-                  </Link>
-                  
+                  </button>
                   <Link
                     href="/products"
                     className="block w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-center px-8 py-3 rounded-2xl font-medium transition-all duration-300"

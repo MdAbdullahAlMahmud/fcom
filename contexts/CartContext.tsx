@@ -9,6 +9,7 @@ interface CartItem {
   sale_price: number | null
   quantity: number
   image_url: string
+  product_type?: 'default' | 'digital' // <-- Add this line
 }
 
 interface CartContextType {
@@ -96,4 +97,4 @@ export function useCart() {
     throw new Error('useCart must be used within a CartProvider')
   }
   return context
-} 
+}

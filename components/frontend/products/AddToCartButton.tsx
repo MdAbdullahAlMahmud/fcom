@@ -13,6 +13,7 @@ interface Product {
   sale_price: number | string | null
   image_url: string
   slug: string
+  product_type?: 'default' | 'digital' // <-- Add this line
 }
 
 interface AddToCartButtonProps {
@@ -51,7 +52,8 @@ export default function AddToCartButton({
       name: product.name,
       price: price,
       sale_price: salePrice,
-      image_url: product.image_url
+      image_url: product.image_url,
+      product_type: product.product_type || 'default' // <-- Pass product_type
     })
 
     toast({

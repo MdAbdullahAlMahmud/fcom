@@ -158,7 +158,8 @@ export default function ProductDetails({ product, relatedProducts, discount, sav
                     price: product.price,
                     sale_price: product.sale_price,
                     image_url: product.images[0],
-                    slug: product.slug
+                    slug: product.slug,
+                    product_type: product.product_type || 'default' // <-- Pass product_type
                   }} 
                 />
               </Suspense>
