@@ -122,6 +122,15 @@ export async function POST(request: Request) {
       let notes = 'Order placed by customer';
 
       let paymentStatus = 'pending';
+      let orderStatus = 'pending';
+      // Check if all products are digital
+      let isDigitalOnly = false;
+      if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+        isDigitalOnly = data.items.every((item: any) => item.product_type === 'digital');
+      }
+      if (isDigitalOnly) {
+        orderStatus = 'delivered';
+      }
       if (data.payment_method === 'online' && data.trxId) {
         // 1. Find the transaction in stored_data
         const trxRows = await connection.execute<RowDataPacket[]>(
@@ -137,12 +146,6 @@ export async function POST(request: Request) {
         paymentMethod = 'online_payment';
         trackingId = data.trxId;
         paymentStatus = 'paid';
-
-        // 3. Update stored_data with phone, user_id, name
-        await connection.execute(
-          'UPDATE stored_data SET phone = ?, user_id = ?, name = ? WHERE TrxID = ?',
-          [data.customer.phone, customerId, data.customer.name, data.trxId]
-        );
         notes = company;
       }
 
@@ -151,7 +154,7 @@ export async function POST(request: Request) {
           order_number, tracking_number, tracking_id, user_id, shipping_address_id,
           billing_address_id, total_amount, status, payment_status,
           payment_method, notes,shipping_fee,shipping_type
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?,?,?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)`,
         [
           orderNumber,
           trackingNumber,
@@ -160,6 +163,7 @@ export async function POST(request: Request) {
           addressId,
           addressId,
           data.total,
+          orderStatus,
           paymentStatus,
           paymentMethod,
           notes,
@@ -200,8 +204,8 @@ export async function POST(request: Request) {
       await connection.execute(
         `INSERT INTO order_status_history (
           order_id, status, created_by, notes
-        ) VALUES (?, 'pending', ?, 'Order created')`,
-        [orderId, customerId]
+        ) VALUES (?, ?, ?, 'Order created')`,
+        [orderId, orderStatus, customerId]
       )
 
       return { orderId, orderNumber, trackingNumber }
@@ -231,4 +235,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

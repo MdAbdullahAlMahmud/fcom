@@ -191,7 +191,8 @@ export default function CheckoutPage() {
         items: items.map(item => ({
           id: item.id,
           quantity: item.quantity,
-          price: item.sale_price || item.price
+          price: item.sale_price || item.price,
+          product_type: item.product_type || 'default',
         })),
         total: finalTotal,
         shipping_fee: isDigitalOnly ? 0 : shippingCost,
