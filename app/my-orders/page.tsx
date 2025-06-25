@@ -15,6 +15,8 @@ interface OrderItem {
   quantity: number
   unit_price: number
   total_price: number
+  product_type?: 'default' | 'digital'
+  download_link?: string
 }
 
 interface Order {
@@ -202,7 +204,32 @@ export default function MyOrdersPage() {
                               />
                             )}
                             <div className="flex-1">
-                              <p className="font-medium text-gray-900">{item.product_name}</p>
+                              <p className="font-medium text-gray-900 flex items-center gap-2">
+                                {item.product_name}
+                                {item.product_type === 'digital' && item.download_link && (
+                                  <>
+                                    <a
+                                      href={item.download_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="ml-2 px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
+                                    >
+                                      Download
+                                    </a>
+                                    <button
+                                      type="button"
+                                      className="ml-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 border border-blue-200 shadow-sm"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(item.download_link!);
+                                        toast.success('Download link copied!');
+                                      }}
+                                      title="Copy download link"
+                                    >
+                                      Copy Link
+                                    </button>
+                                  </>
+                                )}
+                              </p>
                               <p className="text-sm text-gray-500">
                                 Quantity: {item.quantity} × ${formatCurrency(item.unit_price)}
                               </p>

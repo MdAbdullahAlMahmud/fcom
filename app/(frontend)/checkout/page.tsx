@@ -1,7 +1,7 @@
 'use client'
 
 import { useCart } from '@/contexts/CartContext'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 
@@ -17,9 +17,9 @@ const SHIPPING_OPTIONS = [
 ];
 
 export default function CheckoutPage() {
-  const { items, total, clearCart } = useCart()
-  const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { items, total, clearCart } = useCart();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentOption, setPaymentOption] = useState<'cod' | 'online'>('cod');
   const [shippingOption, setShippingOption] = useState<'inside_dhaka' | 'outside_dhaka'>('inside_dhaka');
   const [paymentAccounts, setPaymentAccounts] = useState<{ provider: string; phone_number: string }[]>([]);
@@ -27,9 +27,29 @@ export default function CheckoutPage() {
   const [trxVerified, setTrxVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [trxError, setTrxError] = useState('');
+  const [isDigitalOnly, setIsDigitalOnly] = useState<boolean | null>(null);
+
+  // Check product types on mount
+  useEffect(() => {
+    if (items.length === 0) return;
+    fetch('/api/products/types-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: items.map(i => i.id) })
+    })
+      .then(res => res.json())
+      .then(data => {
+        const types = new Set(data.types);
+        setIsDigitalOnly(types.size === 1 && types.has('digital'));
+        // If digital only, force payment option to online
+        if (types.size === 1 && types.has('digital')) {
+          setPaymentOption('online');
+        }
+      });
+  }, [items]);
 
   // Calculate shipping cost
-  const shippingCost = SHIPPING_OPTIONS.find(opt => opt.key === shippingOption)?.cost || 0;
+  const shippingCost = isDigitalOnly ? 0 : (SHIPPING_OPTIONS.find(opt => opt.key === shippingOption)?.cost || 0);
   const finalTotal = total + shippingCost;
 
   // Fetch payment accounts on mount or when payment option changes
@@ -174,8 +194,8 @@ export default function CheckoutPage() {
           price: item.sale_price || item.price
         })),
         total: finalTotal,
-        shipping_fee: shippingCost,
-        shipping_type: shippingOption,
+        shipping_fee: isDigitalOnly ? 0 : shippingCost,
+        shipping_type: isDigitalOnly ? 'digital' : shippingOption,
         customer: {
           name: formData.full_name,
           email: formData.email || `${formData.phone}@temp.com`,
@@ -268,7 +288,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
@@ -442,43 +462,45 @@ export default function CheckoutPage() {
               </div>
 
               {/* Shipping Options */}
-              <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-                <div className="flex items-center mb-6">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mr-4">
-                    <span className="text-white font-bold">3</span>
+              {isDigitalOnly === false && (
+                <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+                  <div className="flex items-center mb-6">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mr-4">
+                      <span className="text-white font-bold">3</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-800">Shipping Options</h3>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800">Shipping Options</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {SHIPPING_OPTIONS.map(option => (
-                    <div
-                      key={option.key}
-                      className={`cursor-pointer border-2 rounded-xl p-6 transition-all duration-300 hover:shadow-lg ${
-                        shippingOption === option.key 
-                          ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 shadow-lg' 
-                          : 'border-gray-200 bg-white hover:border-gray-300'
-                      }`}
-                      onClick={() => setShippingOption(option.key as 'inside_dhaka' | 'outside_dhaka')}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center">
-                          <span className="text-2xl mr-3">{option.icon}</span>
-                          <div>
-                            <div className="font-bold text-lg text-gray-800">{option.label}</div>
-                            <div className="text-sm text-gray-600">{option.deliveryTime}</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {SHIPPING_OPTIONS.map(option => (
+                      <div
+                        key={option.key}
+                        className={`cursor-pointer border-2 rounded-xl p-6 transition-all duration-300 hover:shadow-lg ${
+                          shippingOption === option.key 
+                            ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 shadow-lg' 
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                        onClick={() => setShippingOption(option.key as 'inside_dhaka' | 'outside_dhaka')}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center">
+                            <span className="text-2xl mr-3">{option.icon}</span>
+                            <div>
+                              <div className="font-bold text-lg text-gray-800">{option.label}</div>
+                              <div className="text-sm text-gray-600">{option.deliveryTime}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-lg text-gray-800">৳{option.cost}</div>
+                            {shippingOption === option.key && (
+                              <div className="text-purple-600 font-semibold text-sm">Selected</div>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-bold text-lg text-gray-800">৳{option.cost}</div>
-                          {shippingOption === option.key && (
-                            <div className="text-purple-600 font-semibold text-sm">Selected</div>
-                          )}
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button
                 type="submit"
@@ -503,7 +525,7 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
               <h3 className="text-xl font-bold text-gray-800 mb-6">Payment Method</h3>
               <div className="space-y-4">
-                {PAYMENT_OPTIONS.map(opt => (
+                {PAYMENT_OPTIONS.filter(opt => isDigitalOnly ? opt.key === 'online' : true).map(opt => (
                   <div
                     key={opt.key}
                     className={`cursor-pointer border-2 rounded-xl p-4 transition-all duration-300 hover:shadow-md ${

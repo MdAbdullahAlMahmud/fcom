@@ -22,27 +22,37 @@ export async function GET(request: Request) {
       )
     }
 
-    // Get phone from token
-    const phone = decoded.phone
+    // Get phone from token (handle both JwtPayload and string)
+    const phone =
+      typeof decoded === 'object' && decoded !== null && 'phone' in decoded
+        ? (decoded as any).phone
+        : undefined
+    if (!phone) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid token (no phone)' },
+        { status: 401 }
+      )
+    }
 
     // First get customer IDs for this phone number
     const customers = await query(
       'SELECT id FROM customers WHERE phone = ?',
       [phone]
-    )
+    ) as any[]
 
-    if (!customers.length) {
+    if (!Array.isArray(customers) || customers.length === 0) {
       return NextResponse.json({
         success: true,
         orders: []
       })
     }
 
-    const customerIds = customers.map(c => c.id)
+    const customerIds = customers.map((c: any) => c.id)
     const placeholders = customerIds.map(() => '?').join(',')
 
     // Fetch orders with items and address
-    const orders = await query(`
+    const orders = await query(
+      `
       SELECT 
         o.*,
         a.address_line1 as shipping_address_line1,
@@ -55,21 +65,28 @@ export async function GET(request: Request) {
       LEFT JOIN addresses a ON o.shipping_address_id = a.id
       WHERE o.user_id IN (${placeholders})
       ORDER BY o.created_at DESC
-    `, customerIds)
+    `,
+      customerIds
+    ) as any[]
 
     // Fetch order items for each order
     for (const order of orders) {
-      const items = await query(`
+      const items = await query(
+        `
         SELECT 
           oi.*,
           p.name as product_name,
-          pi.image_url as product_image
+          pi.image_url as product_image,
+          p.product_type,
+          p.download_link
         FROM order_items oi
         LEFT JOIN products p ON oi.product_id = p.id
         LEFT JOIN product_images pi ON p.id = pi.product_id
         WHERE oi.order_id = ?
         GROUP BY oi.id
-      `, [order.id])
+      `,
+        [order.id]
+      ) as any[]
       order.items = items
     }
 
@@ -84,4 +101,4 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
-} 
+}
