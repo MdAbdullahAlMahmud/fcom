@@ -3,7 +3,7 @@
 import { useCart } from '@/contexts/CartContext'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Heart } from 'lucide-react'
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react'
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total } = useCart()
@@ -78,9 +78,6 @@ export default function CartPage() {
                         className="object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     </div>
-                    <button className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-red-50">
-                      <Heart className="w-4 h-4 text-slate-400 hover:text-red-500 transition-colors" />
-                    </button>
                   </div>
 
                   {/* Product Details */}
