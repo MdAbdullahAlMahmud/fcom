@@ -558,17 +558,41 @@ export default function AdminDashboard() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {order.items.map((item) => (
-                            <Badge 
-                              key={item.id} 
-                              variant="secondary" 
-                              className="bg-gray-100 hover:bg-gray-200 transition-colors"
+                        {order.items.length <= 2 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {order.items.map((item) => (
+                              <Badge
+                                key={item.id}
+                                variant="secondary"
+                                className="bg-gray-100 hover:bg-gray-200 transition-colors"
+                              >
+                                {item.name} x {item.quantity}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="relative group inline-block">
+                            <Badge
+                              variant="secondary"
+                              className="bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
                             >
-                              {item.name} x {item.quantity}
+                              +{order.items.length} items
                             </Badge>
-                          ))}
-                        </div>
+                            <div className="absolute z-10 left-0 mt-2 w-max min-w-[180px] bg-white border border-gray-200 rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
+                              <div className="flex flex-wrap gap-1">
+                                {order.items.map((item) => (
+                                  <Badge
+                                    key={item.id}
+                                    variant="secondary"
+                                    className="bg-gray-100 hover:bg-gray-200 transition-colors"
+                                  >
+                                    {item.name} x {item.quantity}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="font-medium">৳{order.total_amount.toLocaleString()}</TableCell>
                       <TableCell>
