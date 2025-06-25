@@ -27,6 +27,7 @@ export default function CheckoutPage() {
   const [trxVerified, setTrxVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [trxError, setTrxError] = useState('');
+  const [trxProvider, setTrxProvider] = useState<string>('');
 
   // Calculate shipping cost
   const shippingCost = SHIPPING_OPTIONS.find(opt => opt.key === shippingOption)?.cost || 0;
@@ -183,6 +184,7 @@ export default function CheckoutPage() {
           address: formattedAddress
         },
         payment_method: paymentOption,
+        notes: paymentOption === 'online' ? trxProvider : undefined,
       };
       if (paymentOption === 'online') {
         requestData.trxId = trxId;
@@ -616,14 +618,17 @@ export default function CheckoutPage() {
                           const data = await res.json();
                           if (data.success) {
                             setTrxVerified(true);
+                            setTrxProvider(data.text_company || '');
                             toast.success('Transaction verified successfully!');
                           } else {
                             setTrxVerified(false);
+                            setTrxProvider('');
                             setTrxError(data.message || 'Verification failed');
                             toast.error(data.message || 'Verification failed');
                           }
                         } catch (err) {
                           setTrxVerified(false);
+                          setTrxProvider('');
                           setTrxError('Verification failed');
                           toast.error('Verification failed');
                         } finally {
