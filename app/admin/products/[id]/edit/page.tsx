@@ -38,6 +38,8 @@ interface Product {
   is_featured: boolean
   category_id: number | null
   images: { id: number; image_url: string; alt_text: string | null }[]
+  product_type?: string // Added for digital/object
+  download_link?: string | null // Added for digital products
 }
 
 export default function EditProductPage({
@@ -105,6 +107,17 @@ export default function EditProductPage({
   // State for HTML
   const [html, setHtml] = useState<string>('')
 
+  // Add state for product_type and download_link if not present
+  const [productType, setProductType] = useState<string>('default')
+  const [downloadLink, setDownloadLink] = useState<string>('')
+
+  useEffect(() => {
+    if (product) {
+      setProductType(product.product_type || 'default')
+      setDownloadLink(product.download_link || '')
+    }
+  }, [product])
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -171,8 +184,9 @@ export default function EditProductPage({
           stock_quantity: parseInt(product.stock_quantity.toString()),
           weight: product.weight ? parseFloat(product.weight.toString()) : null,
           category_id: product.category_id ? parseInt(product.category_id.toString()) : null,
-          // When HTML is empty or contains only whitespace, explicitly set to null to clear it in the database
-          html: html && html.trim().length > 0 ? html : null
+          html: html && html.trim().length > 0 ? html : null,
+          product_type: productType,
+          download_link: productType === 'digital' && downloadLink ? downloadLink : null // force null if not digital
         }),
         credentials: 'include'
       })
@@ -396,6 +410,36 @@ export default function EditProductPage({
             />
           </div>
 
+          {/* Product Type Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="product_type">Product Type</Label>
+            <Select
+              value={productType}
+              onValueChange={value => setProductType(value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select product type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Object (Physical)</SelectItem>
+                <SelectItem value="digital">Digital</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Download Link (only for digital) */}
+          {productType === 'digital' && (
+            <div className="space-y-2">
+              <Label htmlFor="download_link">Download Link (optional)</Label>
+              <Input
+                id="download_link"
+                value={downloadLink}
+                onChange={e => setDownloadLink(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+          )}
+
           <div className="flex justify-end space-x-4">
             <Button
               type="button"
@@ -412,4 +456,4 @@ export default function EditProductPage({
       </div>
     </div>
   )
-} 
+}

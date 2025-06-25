@@ -39,7 +39,7 @@ export default function CreateProductPage() {
     name: '',
     description: '',
     short_description: '',
-sku: '',
+    sku: '',
     price: '',
     sale_price: '',
     stock_quantity: '',
@@ -48,7 +48,9 @@ sku: '',
     category_id: '',
     is_active: true,
     is_featured: false,
-    html: '' // New field for custom HTML
+    html: '', // New field for custom HTML
+    product_type: 'default', // New field for product type
+    download_link: '' // New field for download link
   })
 
   useEffect(() => {
@@ -152,7 +154,9 @@ sku: '',
           stock_quantity: parseInt(formData.stock_quantity),
           weight: formData.weight ? parseFloat(formData.weight) : null,
           category_id: formData.category_id ? parseInt(formData.category_id) : null,
-          html: formData.html && formData.html.trim().length > 0 ? formData.html : null
+          html: formData.html && formData.html.trim().length > 0 ? formData.html : null,
+          product_type: formData.product_type,
+          download_link: formData.product_type === 'digital' && formData.download_link ? formData.download_link : null
         })
       })
 
@@ -362,6 +366,36 @@ sku: '',
               Upload up to 4 product images. Click on an image to remove it.
             </p>
           </div>
+
+          {/* Product Type Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="product_type">Product Type</Label>
+            <Select
+              value={formData.product_type}
+              onValueChange={value => setFormData({ ...formData, product_type: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select product type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Object (Physical)</SelectItem>
+                <SelectItem value="digital">Digital</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Download Link (only for digital) */}
+          {formData.product_type === 'digital' && (
+            <div className="space-y-2">
+              <Label htmlFor="download_link">Download Link (optional)</Label>
+              <Input
+                id="download_link"
+                value={formData.download_link}
+                onChange={e => setFormData({ ...formData, download_link: e.target.value })}
+                placeholder="https://..."
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="html">Custom HTML Section (optional)</Label>

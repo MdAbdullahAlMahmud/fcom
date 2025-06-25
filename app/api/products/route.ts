@@ -134,7 +134,9 @@ export async function POST(request: Request) {
       is_active,
       is_featured,
       images,
-      html // <-- new field for custom HTML
+      html, // <-- new field for custom HTML
+      product_type, // <-- new field for digital/object
+      download_link // <-- new field for digital products
     } = body
 
     // Validate required fields
@@ -168,8 +170,8 @@ export async function POST(request: Request) {
         `INSERT INTO products (
           name, slug, description, short_description, sku,
           price, sale_price, stock_quantity, weight, dimensions,
-          is_active, is_featured, category_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          is_active, is_featured, category_id, product_type, download_link
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           name,
           slug,
@@ -183,7 +185,9 @@ export async function POST(request: Request) {
           dimensions || null,
           is_active ? 1 : 0,
           is_featured ? 1 : 0,
-          category_id || null
+          category_id || null,
+          product_type || 'default',
+          download_link || null
         ]
       )
 
@@ -232,4 +236,158 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}
+
+export async function PUT(request: Request) {
+  try {
+    const payload = await verifyAuth()
+    if (!payload || payload.role !== 'admin') {
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const {
+      id,
+      name,
+      description,
+      short_description,
+      sku,
+      price,
+      sale_price,
+      stock_quantity,
+      weight,
+      dimensions,
+      category_id,
+      is_active,
+      is_featured,
+      images,
+      html,
+      product_type,
+      download_link
+    } = body
+
+    if (!id || !name || !sku || !price || stock_quantity === undefined) {
+      return NextResponse.json(
+        { message: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    const slug = slugify(name, { lower: true })
+
+    // Check for duplicate slug (excluding this product)
+    const [existingProduct] = await query(
+      'SELECT id FROM products WHERE slug = ? AND id != ?',
+      [slug, id]
+    ) as any[]
+    if (existingProduct) {
+      return NextResponse.json(
+        { message: 'A product with this name already exists' },
+        { status: 400 }
+      )
+    }
+
+    await transaction(async (connection) => {
+      // Always update product_type and download_link robustly
+      let updateProductType = product_type;
+      if (updateProductType !== 'digital') updateProductType = 'default';
+      const updateDownloadLink = updateProductType === 'digital' && download_link ? download_link : null;
+      await connection.execute(
+        `UPDATE products SET
+          name = ?,
+          slug = ?,
+          description = ?,
+          short_description = ?,
+          sku = ?,
+          price = ?,
+          sale_price = ?,
+          stock_quantity = ?,
+          weight = ?,
+          dimensions = ?,
+          is_active = ?,
+          is_featured = ?,
+          category_id = ?,
+          product_type = ?,
+          download_link = ?,
+          updated_at = NOW()
+        WHERE id = ?`,
+        [
+          name,
+          slug,
+          description || null,
+          short_description || null,
+          sku,
+          price,
+          sale_price || null,
+          stock_quantity,
+          weight || null,
+          dimensions || null,
+          is_active ? 1 : 0,
+          is_featured ? 1 : 0,
+          category_id || null,
+          updateProductType,
+          updateDownloadLink,
+          id
+        ]
+      )
+
+      // Upsert product HTML
+      if (typeof html === 'string') {
+        // Try update first
+        const [result] = await connection.execute(
+          `UPDATE product_html SET html = ? WHERE product_id = ?`,
+          [html, id]
+        )
+        // If no row was updated, insert
+        // @ts-ignore
+        if (result.affectedRows === 0) {
+          await connection.execute(
+            `INSERT INTO product_html (product_id, html) VALUES (?, ?)`,
+            [id, html]
+          )
+        }
+      } else if (html === null) {
+        // If html is null, delete the row so the field is cleared
+        await connection.execute(
+          'DELETE FROM product_html WHERE product_id = ?',
+          [id]
+        )
+      }
+
+      // Delete existing images
+      await connection.execute('DELETE FROM product_images WHERE product_id = ?', [id])
+
+      // Insert new images
+      if (images && images.length > 0) {
+        const imageValues = images.map((image: string, index: number) => [
+          id,
+          image,
+          null,
+          index,
+          index === 0 ? 1 : 0
+        ])
+        const placeholders = imageValues.map(() => '(?, ?, ?, ?, ?)').join(', ')
+        const flatValues = imageValues.flat()
+        await connection.execute(
+          `INSERT INTO product_images (
+            product_id, image_url, alt_text, sort_order, is_primary
+          ) VALUES ${placeholders}`,
+          flatValues
+        )
+      }
+    })
+
+    return NextResponse.json({
+      message: 'Product updated successfully'
+    })
+  } catch (error) {
+    console.error('Error updating product:', error)
+    return NextResponse.json(
+      { message: 'Failed to update product' },
+      { status: 500 }
+    )
+  }
+}

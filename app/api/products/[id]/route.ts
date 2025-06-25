@@ -107,7 +107,9 @@ export async function PUT(
       is_active,
       is_featured,
       images,
-      html // <-- new field for custom HTML
+      html, // <-- new field for custom HTML
+      product_type, // <-- add product_type
+      download_link // <-- add download_link
     } = body
 
     // Validate required fields
@@ -135,7 +137,10 @@ export async function PUT(
     }
 
     await transaction(async (connection) => {
-      // Update product
+      // Always update product_type and download_link robustly
+      let updateProductType = product_type;
+      if (updateProductType !== 'digital') updateProductType = 'default';
+      const updateDownloadLink = updateProductType === 'digital' && download_link ? download_link : null;
       await connection.execute(
         `UPDATE products SET
           name = ?,
@@ -150,7 +155,10 @@ export async function PUT(
           dimensions = ?,
           is_active = ?,
           is_featured = ?,
-          category_id = ?
+          category_id = ?,
+          product_type = ?,
+          download_link = ?,
+          updated_at = NOW()
         WHERE id = ?`,
         [
           name,
@@ -166,6 +174,8 @@ export async function PUT(
           is_active ? 1 : 0,
           is_featured ? 1 : 0,
           category_id || null,
+          updateProductType,
+          updateDownloadLink,
           params.id
         ]
       )
