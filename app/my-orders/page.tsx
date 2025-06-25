@@ -132,6 +132,15 @@ export default function MyOrdersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 to-purple-50">
       <div className="container mx-auto py-8 px-4">
+        {/* Back Button */}
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="mb-6 flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 transition-colors shadow-sm font-medium"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          Back
+        </button>
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-2">
