@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import "./tailwind-build.css"
 import { Toaster } from 'sonner'
+import { Toaster as HotToaster } from 'react-hot-toast';
 import { CartProvider } from '@/contexts/CartContext'
 import { SiteSettingsProvider } from '@/contexts/SiteSettingsContext'
 
@@ -26,6 +27,7 @@ export default function RootLayout({
             {children}
           </CartProvider>
           <Toaster />
+          <HotToaster position="top-center" />
         </SiteSettingsProvider>
       </body>
     </html>
