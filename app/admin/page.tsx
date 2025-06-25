@@ -104,10 +104,13 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [showSparkles, setShowSparkles] = useState(false)
   const [unseenOrderIds, setUnseenOrderIds] = useState<number[]>([])
+  const [unverifiedTransactions, setUnverifiedTransactions] = useState<any[] | null>(null);
+  const [loadingUnverified, setLoadingUnverified] = useState(false);
 
   useEffect(() => {
-    fetchDashboardData()
-  }, [])
+    fetchDashboardData();
+    fetchUnverifiedTransactions();
+  }, []);
 
   useEffect(() => {
     // Filter today's orders
@@ -169,6 +172,15 @@ export default function AdminDashboard() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  async function fetchUnverifiedTransactions() {
+    setLoadingUnverified(true);
+    const params = new URLSearchParams({ status: 'not verified', limit: '10' });
+    const res = await fetch(`/api/admin/bkash-nagad/transactions?${params}`);
+    const data = await res.json();
+    setUnverifiedTransactions(data.transactions || []);
+    setLoadingUnverified(false);
   }
 
   const getStatusColor = (status: string) => {
@@ -356,7 +368,7 @@ export default function AdminDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
       >
-        <Card className="hover:shadow-lg transition-shadow duration-200 border-2 border-blue-400 bg-white/90 mb-6">
+        <Card className="hover:shadow-lg transition-shadow duration-200 bg-white/90 mb-6">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-blue-600" />
@@ -428,65 +440,72 @@ export default function AdminDashboard() {
         </Card>
       </motion.div>
 
-      {/* Day-wise Orders Chart */}
+      {/* All Unverified Transactions Card - Full Width, Neutral Style */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        whileHover={{ scale: 1.01 }}
+        transition={{ delay: 0.1 }}
       >
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
-              Orders by Day (Last 7 Days)
-            </CardTitle>
+        <Card className="hover:shadow-lg transition-shadow duration-200 bg-white mb-6 w-full">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-orange-600" />
+              <CardTitle className="text-lg font-bold">All Unverified Transactions</CardTitle>
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold">
+                {unverifiedTransactions?.length || 0} Unverified
+              </span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {(Array.isArray(unverifiedTransactions) && unverifiedTransactions.length > 0)
+                ? `${unverifiedTransactions.length} unverified`
+                : 'No unverified transactions'}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.dayWiseOrders}
-                    dataKey="count"
-                    nameKey="date"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    innerRadius={60}
-                    label={({ date, count }) => `${format(new Date(date), 'MMM d')} (${count})`}
-                  >
-                    {stats.dayWiseOrders.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={COLORS[index % COLORS.length]}
-                        className="hover:opacity-80 transition-opacity"
-                      />
+            {(!unverifiedTransactions || unverifiedTransactions.length === 0) ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Sparkles className="h-8 w-8 text-orange-200 mb-2" />
+                <div className="text-gray-500">No unverified transactions found.</div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50/50">
+                      <TableHead>Company</TableHead>
+                      <TableHead className="text-center">Amount</TableHead>
+                      <TableHead>Sender</TableHead>
+                      <TableHead>TrxID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Payment Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unverifiedTransactions.map((trx, idx) => (
+                      <TableRow
+                        key={trx.id}
+                        className={
+                          idx % 2 === 0
+                            ? 'bg-white hover:bg-gray-50 transition-colors'
+                            : 'bg-gray-50 hover:bg-gray-100 transition-colors'
+                        }
+                      >
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${trx.text_company === 'bKash' ? 'bg-pink-100 text-pink-700' : 'bg-yellow-100 text-yellow-800'}`}>{trx.text_company}</span>
+                        </TableCell>
+                        <TableCell className="font-semibold text-center text-gray-800">৳{Number(trx.amount).toLocaleString()}</TableCell>
+                        <TableCell className="text-gray-700">{trx.sender}</TableCell>
+                        <TableCell className="font-mono text-xs text-blue-700">{trx.TrxID}</TableCell>
+                        <TableCell className="text-gray-700">{trx.name}</TableCell>
+                        <TableCell className="text-gray-700">{trx.phone}</TableCell>
+                        <TableCell className="text-gray-500 whitespace-nowrap">{trx.payment_time ? new Date(trx.payment_time).toLocaleString() : '-'}</TableCell>
+                      </TableRow>
                     ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value, name) => [`${value} orders`, format(new Date(name), 'MMMM d, yyyy')]}
-                    contentStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      borderRadius: '8px',
-                      border: 'none',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Legend 
-                    verticalAlign="bottom"
-                    align="center"
-                    iconType="circle"
-                    wrapperStyle={{ paddingTop: '10px' }}
-                    formatter={(value, entry) => (
-                      <span className="text-xs text-muted-foreground">
-                        {value} ({entry.payload.value})
-                      </span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
