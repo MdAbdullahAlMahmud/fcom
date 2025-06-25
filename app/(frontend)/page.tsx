@@ -149,7 +149,7 @@ export default async function Home() {
               <span className="text-sm font-medium text-indigo-700">New Collection Available</span>
             </div>
             
-            <h1 className="text-6xl md:text-7xl font-bold bg-gradient-to-r from-slate-800 via-slate-600 to-slate-800 bg-clip-text text-transparent mb-6 leading-tight">
+            <h1 className="text-6xl md:text-7xl font-bold bg-gradient-to-r from-slate-800 via-slate-600 to-slate-800 bg-clip-text text-transparent mb-6 leading-tight md:leading-[1.1] pb-2">
               {settings?.site_name || 'Beautiful Things'}
             </h1>
             

@@ -171,12 +171,13 @@ export default function OrdersPage() {
               <TableHead>Order #</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Customer</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Total</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Payment Method</TableHead>
-            <TableHead>Payment</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Items</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Total</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Payment Method</TableHead>
+              <TableHead>Payment</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -193,6 +194,31 @@ export default function OrdersPage() {
                       {order.user_email}
                     </div>
                   )}
+                </TableCell>
+                <TableCell>
+                  <div className="relative group inline-block">
+                    <Badge
+                      variant="secondary"
+                      className="bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
+                    >
+                     Products
+                    </Badge>
+                    {order.items && order.items.length > 0 && (
+                      <div className="absolute z-10 left-0 mt-2 w-max min-w-[180px] bg-white border border-gray-200 rounded shadow-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
+                        <div className="flex flex-wrap gap-1">
+                          {order.items.map((item) => (
+                            <Badge
+                              key={item.id}
+                              variant="secondary"
+                              className="bg-gray-100 hover:bg-gray-200 transition-colors"
+                            >
+                              {item.product_name} x {item.quantity}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Badge className={getStatusColor(order.status)}>
@@ -261,4 +287,4 @@ export default function OrdersPage() {
       </div>
     </div>
   )
-} 
+}

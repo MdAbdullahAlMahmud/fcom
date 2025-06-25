@@ -25,6 +25,7 @@ const SORT_OPTIONS = [
 
 export default function BkashNagadTransactionsPage() {
   const [transactions, setTransactions] = useState<any[] | null>(null);
+  const [unverifiedTransactions, setUnverifiedTransactions] = useState<any[] | null>(null);
   const [company, setCompany] = useState('all');
   const [status, setStatus] = useState('all');
   const [sort, setSort] = useState('latest');
@@ -32,11 +33,16 @@ export default function BkashNagadTransactionsPage() {
   const [limit] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingUnverified, setLoadingUnverified] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
     // eslint-disable-next-line
   }, [company, status, sort, page]);
+
+  useEffect(() => {
+    fetchUnverifiedTransactions();
+  }, []);
 
   async function fetchTransactions() {
     setLoading(true);
@@ -55,9 +61,21 @@ export default function BkashNagadTransactionsPage() {
     setLoading(false);
   }
 
+  async function fetchUnverifiedTransactions() {
+    setLoadingUnverified(true);
+    const params = new URLSearchParams({ status: 'not verified', limit: '100' });
+    const res = await fetch(`/api/admin/bkash-nagad/transactions?${params}`);
+    const data = await res.json();
+    setUnverifiedTransactions(data.transactions || []);
+    setLoadingUnverified(false);
+  }
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">bKash/Nagad Transactions</h1>
+
+  
+
       <div className="flex gap-4 mb-6">
         <Select value={company} onValueChange={setCompany}>
           <SelectTrigger className="w-40">

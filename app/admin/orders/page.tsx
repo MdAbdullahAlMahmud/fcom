@@ -135,6 +135,7 @@ export default function OrdersPage() {
               <TableHead>Order #</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Customer</TableHead>
+              <TableHead>Items</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Payment</TableHead>
@@ -154,6 +155,22 @@ export default function OrdersPage() {
                     <div className="text-sm text-gray-500">
                       {order.user_email}
                     </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {order.items && order.items.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      {order.items.slice(0, 2).map((item, idx) => (
+                        <span key={item.id} className="truncate text-xs">
+                          {item.product_name} <span className="text-gray-500">x{item.quantity}</span>
+                        </span>
+                      ))}
+                      {order.items.length > 2 && (
+                        <span className="text-xs text-gray-400">+{order.items.length - 2} more</span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-400">No items</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -208,4 +225,4 @@ export default function OrdersPage() {
       )}
     </div>
   )
-} 
+}

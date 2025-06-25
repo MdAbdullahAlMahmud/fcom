@@ -66,6 +66,67 @@ export default function ContentSettingsForm() {
     setSaving(false)
   }
 
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/png'].includes(file.type)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid file type',
+        description: 'Only .png files are allowed.'
+      });
+      return;
+    }
+    if (file.size > 128 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: 'File too large',
+        description: 'Favicon must be 128KB or less.'
+      });
+      return;
+    }
+    const formData = new FormData();
+    formData.append('favicon', file);
+    const res = await fetch('/api/admin/settings/upload-favicon', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast({
+        title: 'Favicon Uploaded',
+        description: 'Your favicon has been updated.',
+        duration: 3000
+      });
+      // Immediately persist favicon_url to global settings
+      const saveRes = await fetch('/api/site-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...settings, favicon_url: data.url })
+      });
+      if (saveRes.ok) {
+        handleChange('favicon_url', data.url);
+        toast({
+          title: 'Favicon Saved',
+          description: 'Favicon is now active site-wide.',
+          duration: 3000
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to save favicon URL',
+          description: 'Could not update favicon in site settings.'
+        });
+      }
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Upload failed',
+        description: data.message || 'Could not upload favicon.'
+      });
+    }
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center p-8">
       <div className="flex items-center gap-2 text-slate-600">
@@ -118,6 +179,25 @@ export default function ContentSettingsForm() {
                   className="min-h-[100px]"
                 />
                 <p className="text-sm text-slate-500">A short description that appears in search results and meta tags</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="favicon-upload">Favicon Icon</Label>
+                <input
+                  id="favicon-upload"
+                  type="file"
+                  accept=".png"
+                  className="block"
+                  onChange={handleFaviconUpload}
+                />
+                <p className="text-sm text-slate-500">Upload a .png file (max 128KB). Recommended size: 32x32px or 48x48px.</p>
+                {(
+                  settings.favicon_url || settings.favicon_url === ''
+                ) && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <img src={settings.favicon_url ? `/uploads/${settings.favicon_url.replace(/^.*[\\/]/, '')}` : '/uploads/favicon.png'} alt="Favicon preview" className="w-8 h-8 rounded shadow border" />
+                    <span className="text-xs text-slate-500">Current favicon</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

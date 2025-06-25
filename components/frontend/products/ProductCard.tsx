@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Star, Eye, Tag } from 'lucide-react'
+import { Star, Eye, Tag } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AddToCartButton from './AddToCartButton'
 
@@ -25,7 +25,6 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onQuickView }: ProductCardProps) {
-  const [isLiked, setIsLiked] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -71,7 +70,7 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
     >
       {/* Image Container */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Badges */}
+        {/* Badges - Top Left */}
         <div className="absolute top-2 left-2 z-30 flex flex-col gap-1">
           {product.badge && (
             <motion.div
@@ -82,36 +81,18 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
               {product.badge}
             </motion.div>
           )}
-          {hasDiscount && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1"
-            >
-              <Tag className="w-3 h-3" />
-              -{discountPercentage}%
-            </motion.div>
-          )}
         </div>
-
-        {/* Like Button - Top Right */}
-        <div className="absolute top-2 right-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={(e) => {
-              e.stopPropagation()
-              setIsLiked(!isLiked)
-            }}
-            className={`p-2 rounded-full shadow-lg backdrop-blur-sm transition-all duration-300 ${
-              isLiked 
-                ? 'bg-red-500 text-white' 
-                : 'bg-white/90 text-gray-600 hover:bg-white hover:text-red-500'
-            }`}
+        {/* Discount Percentage - Top Right */}
+        {hasDiscount && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute top-2 right-2 z-30 bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1"
           >
-            <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-          </motion.button>
-        </div>
+            <Tag className="w-3 h-3" />
+            -{discountPercentage}%
+          </motion.div>
+        )}
 
         {/* Product Image with optimized loading */}
         <div className="relative w-full h-full">

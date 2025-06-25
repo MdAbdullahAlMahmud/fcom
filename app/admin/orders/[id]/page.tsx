@@ -263,7 +263,11 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
               <div className="border-t pt-4 mt-4">
                 <div className="flex justify-between mb-2">
                   <span>Subtotal:</span>
-                  <span>{formatCurrency(order.total_amount - order.shipping_fee - order.tax_amount + order.discount_amount)}</span>
+                  <span>{
+                    typeof order.subtotal === 'number'
+                      ? formatCurrency(order.subtotal)
+                      : formatCurrency(order.total_amount - order.shipping_fee - order.tax_amount - (order.discount_amount || 0))
+                  }</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span>Shipping:</span>
@@ -388,4 +392,4 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
       </div>
     </div>
   )
-} 
+}
