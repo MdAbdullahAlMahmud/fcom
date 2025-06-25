@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       // 4. Create order (handle online payment logic)
       console.log('Creating order...')
       const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`
-      const trackingNumber = `TRK-${uuidv4().slice(0, 8).toUpperCase()}`
+      const trackingNumber = null
 
 
       let paymentMethod = 'cash_on_delivery';
@@ -231,4 +231,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

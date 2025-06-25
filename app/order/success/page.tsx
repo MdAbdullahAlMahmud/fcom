@@ -44,12 +44,7 @@ export default function OrderSuccessPage() {
                   {orderNumber}
                 </dd>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Tracking Number</dt>
-                <dd className="mt-1 text-lg font-semibold text-gray-900">
-                  {trackingNumber}
-                </dd>
-              </div>
+            
             </dl>
           </div>
 
