@@ -58,6 +58,8 @@ interface RecentOrder {
     name: string
     quantity: number
   }>
+  payment_method?: string
+  notes?: string | null
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658']
@@ -538,6 +540,7 @@ export default function AdminDashboard() {
                     <TableHead>Items</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Payment Type</TableHead>
                     <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -599,6 +602,26 @@ export default function AdminDashboard() {
                         <Badge className={getStatusColor(order.status)}>
                           {order.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {order.payment_method ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Badge
+                              className={
+                                order.payment_method === 'online_payment'
+                                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                  : 'bg-gray-100 text-gray-800 border-gray-200'
+                              }
+                            >
+                              {order.payment_method.replace(/_/g, ' ')}
+                            </Badge>
+                            {order.payment_method === 'online_payment' && order.notes && (
+                              <span className="ml-1 text-xs text-muted-foreground">({order.notes})</span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {format(new Date(order.created_at), 'MMM d, yyyy')}

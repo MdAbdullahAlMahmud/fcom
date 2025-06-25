@@ -39,17 +39,19 @@ export async function GET() {
         o.total_amount,
         o.status,
         o.created_at,
+        o.payment_method,
+        o.notes,
         c.name as customer_name,
         c.email as customer_email
       FROM orders o
       LEFT JOIN customers c ON o.user_id = c.id
       ORDER BY o.created_at DESC
       LIMIT 5
-    `)
+    `) as any[];
 
     // Then get the items for each order
     const ordersWithItems = await Promise.all(
-      orders.map(async (order) => {
+      (orders as any[]).map(async (order: any) => {
         const items = await query(`
           SELECT 
             oi.id,
@@ -75,4 +77,4 @@ export async function GET() {
       { status: 500 }
     )
   }
-} 
+}
