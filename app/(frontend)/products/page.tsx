@@ -7,13 +7,13 @@ import ProductCard from '@/components/frontend/products/ProductCard'
 
 async function getCategories() {
   try {
-    const categories = await query(`
+    const categoriesRaw = await query(`
       SELECT id, name, slug
       FROM categories
       WHERE is_active = 1
       ORDER BY name
     `)
-    return categories
+    return Array.isArray(categoriesRaw) && categoriesRaw.length > 0 && typeof categoriesRaw[0] === 'object' && 'id' in categoriesRaw[0] && !('affectedRows' in categoriesRaw[0]) ? categoriesRaw : []
   } catch (error) {
     console.error('Error fetching categories:', error)
     return []
@@ -77,8 +77,8 @@ async function getProducts(searchParams: { [key: string]: string | string[] | un
         sqlQuery += ' ORDER BY p.created_at DESC'
     }
 
-    const products = await query(sqlQuery, params)
-    return products
+    const productsRaw = await query(sqlQuery, params)
+    return Array.isArray(productsRaw) && productsRaw.length > 0 && typeof productsRaw[0] === 'object' && 'id' in productsRaw[0] && !('affectedRows' in productsRaw[0]) ? productsRaw : []
   } catch (error) {
     console.error('Error fetching products:', error)
     return []
@@ -162,4 +162,4 @@ export default async function ProductsPage({
       </div>
     </div>
   )
-} 
+}

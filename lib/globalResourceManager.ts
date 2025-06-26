@@ -16,7 +16,8 @@ async function getCached(key: string, fetcher: () => Promise<any>, ttl = DEFAULT
 
 export async function getAllSiteSettings(): Promise<Record<string, string>> {
   return getCached('all_site_settings', async () => {
-    const results: any[] = await query('SELECT `key`, `value` FROM global_settings')
+    const resultsRaw = await query('SELECT `key`, `value` FROM global_settings')
+    const results: any[] = Array.isArray(resultsRaw) ? resultsRaw : [];
     const settings: Record<string, string> = {}
     for (const row of results) {
       settings[row.key] = row.value

@@ -33,7 +33,7 @@ export async function GET(
     const payload = await verifyAuth()
     
     // Get order details
-    const [order] = await query(
+    const orderResult = await query(
       `SELECT 
         o.*,
         CASE 
@@ -66,7 +66,8 @@ export async function GET(
       LEFT JOIN addresses ba ON o.billing_address_id = ba.id
       WHERE o.id = ?`,
       [params.id]
-    )
+    );
+    const order = Array.isArray(orderResult) ? orderResult[0] : undefined;
 
     if (!order) {
       return NextResponse.json(
@@ -76,7 +77,7 @@ export async function GET(
     }
 
     // Check if user has permission to view this order
-    if (payload?.role !== 'admin' && order.user_id !== payload?.userId) {
+    if (payload?.role !== 'admin' && order && typeof order === 'object' && 'user_id' in order && order.user_id !== payload?.userId) {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 403 }
@@ -235,7 +236,8 @@ export async function PATCH(
     logger.debug('Order update result', { updateResult })
 
     // Check if any rows were affected
-    if (updateResult.affectedRows === 0) {
+    const affectedRows = (updateResult && typeof updateResult === 'object' && 'affectedRows' in updateResult) ? (updateResult as any).affectedRows : 0;
+    if (affectedRows === 0) {
       logger.warn('Order not found or no changes made', { orderId: params.id })
       return NextResponse.json(
         { message: 'Order not found or no changes made' },
@@ -343,4 +345,4 @@ export async function DELETE(
       { status: 500 }
     )
   }
-} 
+}

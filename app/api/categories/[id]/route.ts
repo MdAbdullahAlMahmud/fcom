@@ -29,10 +29,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const [category] = await query(
+    const categoryResult = await query(
       'SELECT * FROM categories WHERE id = ?',
       [params.id]
     )
+    const category = Array.isArray(categoryResult) ? categoryResult[0] : undefined
 
     if (!category) {
       return NextResponse.json(
@@ -82,11 +83,11 @@ export async function PUT(
       .replace(/(^-|-$)/g, '')
 
     // Check if category with same slug exists (excluding current category)
-    const existingCategory = await query(
+    const existingCategoryResult = await query(
       'SELECT id FROM categories WHERE slug = ? AND id != ?',
       [slug, params.id]
-    )
-
+    );
+    const existingCategory = Array.isArray(existingCategoryResult) ? existingCategoryResult : [];
     if (existingCategory.length > 0) {
       return NextResponse.json(
         { message: 'A category with this name already exists' },
@@ -96,10 +97,11 @@ export async function PUT(
 
     // Validate parent_id if provided
     if (parent_id !== null && parent_id !== undefined) {
-      const parentExists = await query(
+      const parentExistsResult = await query(
         'SELECT id FROM categories WHERE id = ?',
         [parent_id]
-      )
+      );
+      const parentExists = Array.isArray(parentExistsResult) ? parentExistsResult : [];
       if (parentExists.length === 0) {
         return NextResponse.json(
           { message: 'Parent category does not exist' },
@@ -157,11 +159,11 @@ export async function DELETE(
     }
 
     // Check if category has children
-    const children = await query(
+    const childrenResult = await query(
       'SELECT id FROM categories WHERE parent_id = ?',
       [params.id]
-    )
-
+    );
+    const children = Array.isArray(childrenResult) ? childrenResult : [];
     if (children.length > 0) {
       return NextResponse.json(
         { message: 'Cannot delete category with subcategories' },
@@ -185,4 +187,4 @@ export async function DELETE(
       { status: 500 }
     )
   }
-} 
+}

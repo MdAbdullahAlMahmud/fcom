@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers'
 import { jwtVerify, SignJWT } from 'jose'
 import { User, UserRole, LoginCredentials, RegisterData, AuthResponse, AuthError } from './types'
-import { db } from '@/lib/db/mysql'
+const { db } = require('../../../lib/db/mysql')
+
 import { hash, compare } from 'bcrypt'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-super-secret-jwt-key-2024')

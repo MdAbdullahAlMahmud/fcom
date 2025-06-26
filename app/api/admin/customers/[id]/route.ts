@@ -37,7 +37,7 @@ export async function GET(
     }
 
     // Get customer details with order statistics
-    const [customer] = await query(
+    const customerResult = await query(
       `SELECT 
         c.*,
         COUNT(DISTINCT o.id) as total_orders,
@@ -48,7 +48,8 @@ export async function GET(
       WHERE c.id = ?
       GROUP BY c.id`,
       [params.id]
-    )
+    );
+    const customer = Array.isArray(customerResult) ? customerResult[0] : undefined;
 
     if (!customer) {
       return NextResponse.json(
@@ -64,7 +65,7 @@ export async function GET(
     )
 
     // Get customer's recent orders
-    const orders = await query(
+    const ordersResult = await query(
       `SELECT 
         o.*,
         GROUP_CONCAT(
@@ -84,7 +85,8 @@ export async function GET(
       ORDER BY o.created_at DESC
       LIMIT 5`,
       [params.id]
-    )
+    );
+    const orders = Array.isArray(ordersResult) ? ordersResult : [];
 
     // Transform order items
     const transformedOrders = orders.map((order: any) => {
@@ -116,4 +118,4 @@ export async function GET(
       { status: 500 }
     )
   }
-} 
+}

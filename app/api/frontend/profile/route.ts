@@ -23,13 +23,23 @@ export async function GET(request: Request) {
     }
 
     // Get phone from token
-    const phone = decoded.phone
+    const phone =
+      decoded && typeof decoded === 'object' && 'phone' in decoded
+        ? (decoded as any).phone
+        : undefined
+    if (!phone) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid token payload' },
+        { status: 401 }
+      )
+    }
 
     // Get customer details
-    const [customer] = await query(
+    const customerResult = await query(
       'SELECT * FROM customers WHERE phone = ?',
       [phone]
     )
+    const customer = Array.isArray(customerResult) ? customerResult[0] : undefined
 
     if (!customer) {
       return NextResponse.json(
@@ -39,7 +49,8 @@ export async function GET(request: Request) {
     }
 
     // Get order statistics
-    const [stats] = await query(`
+    const statsResult = await query(
+      `
       SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
@@ -51,12 +62,15 @@ export async function GET(request: Request) {
       FROM orders o
       JOIN customers c ON o.user_id = c.id
       WHERE c.phone = ?
-    `, [phone])
+    `,
+      [phone]
+    )
+    const stats = Array.isArray(statsResult) ? statsResult[0] : undefined
 
     return NextResponse.json({
       success: true,
       profile: {
-        phone: customer.phone,
+        phone: customer && typeof customer === 'object' && 'phone' in customer ? customer.phone : undefined,
         orderStats: stats
       }
     })
@@ -67,4 +81,4 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   })
 
   const isActive = (path: string) => pathname === path
-  const isActiveGroup = (paths: string[]) => paths.some(path => pathname.startsWith(path))
+  const isActiveGroup = (paths: string[]) => pathname ? paths.some(path => pathname.startsWith(path)) : false
 
   const toggleMenu = (menu: string) => {
     setExpandedMenus(prev => ({

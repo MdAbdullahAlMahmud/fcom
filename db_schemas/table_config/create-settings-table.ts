@@ -1,4 +1,4 @@
-import { query } from '../../../lib/db/mysql'
+const { query } = require('../../../lib/db/mysql')
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'

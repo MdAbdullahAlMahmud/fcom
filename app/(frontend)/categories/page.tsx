@@ -35,7 +35,8 @@ async function getCategories() {
 }
 
 export default async function CategoriesPage() {
-  const categories = await getCategories()
+  const categoriesRaw = await getCategories()
+  const categories = Array.isArray(categoriesRaw) ? categoriesRaw : []
 
   return (
     <div className="min-h-screen bg-white">
@@ -146,4 +147,4 @@ export default async function CategoriesPage() {
       </div>
     </div>
   )
-} 
+}

@@ -68,11 +68,13 @@ export async function POST(request: Request) {
       .replace(/(^-|-$)/g, '')
 
     // Check if category with same slug exists
-    const existingCategory = await query(
+    const existingCategoryResult = await query(
       'SELECT id FROM categories WHERE slug = ?',
       [slug]
     )
-
+    const existingCategory = Array.isArray(existingCategoryResult)
+      ? existingCategoryResult
+      : []
     if (existingCategory.length > 0) {
       return NextResponse.json(
         { message: 'A category with this name already exists' },
@@ -82,10 +84,11 @@ export async function POST(request: Request) {
 
     // Validate parent_id if provided
     if (parent_id !== null && parent_id !== undefined) {
-      const parentExists = await query(
+      const parentExistsResult = await query(
         'SELECT id FROM categories WHERE id = ?',
         [parent_id]
-      )
+      );
+      const parentExists = Array.isArray(parentExistsResult) ? parentExistsResult : [];
       if (parentExists.length === 0) {
         return NextResponse.json(
           { message: 'Parent category does not exist' },
@@ -95,7 +98,7 @@ export async function POST(request: Request) {
     }
 
     // Insert new category
-    const result = await query(
+    const insertResult = await query(
       `INSERT INTO categories (
         name,
         slug,
@@ -114,11 +117,12 @@ export async function POST(request: Request) {
         is_active ? 1 : 0,
         image_url || null
       ]
-    )
+    );
+    const categoryId = insertResult && typeof insertResult === 'object' && 'insertId' in insertResult ? (insertResult as any).insertId : undefined;
 
     return NextResponse.json({
       message: 'Category created successfully',
-      categoryId: result.insertId
+      categoryId
     })
   } catch (error) {
     console.error('Error creating category:', error)
@@ -127,4 +131,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

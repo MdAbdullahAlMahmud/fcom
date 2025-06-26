@@ -3,10 +3,15 @@ import { query } from '@/lib/db/mysql'
 import { ArrowRight, Star, TrendingUp, Clock, Tag, Sparkles, Heart, Gift } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import type { RowDataPacket } from 'mysql2/promise'
+
+function isProductArray(arr: any): arr is RowDataPacket[] {
+  return Array.isArray(arr) && arr.length > 0 && typeof arr[0] === 'object' && 'id' in arr[0] && typeof arr[0].id !== 'undefined';
+}
 
 async function getFeaturedProducts() {
   try {
-    const products = await query(`
+    const productsRaw = await query(`
       SELECT 
         p.id,
         p.name,
@@ -23,8 +28,7 @@ async function getFeaturedProducts() {
       WHERE p.is_featured = 1 AND p.is_active = 1
       LIMIT 8
     `)
-
-    return products
+    return isProductArray(productsRaw) ? (productsRaw as any) : []
   } catch (error) {
     console.error('Error fetching featured products:', error)
     return []
@@ -33,7 +37,7 @@ async function getFeaturedProducts() {
 
 async function getPopularCategories() {
   try {
-    const categories = await query(`
+    const categoriesRaw = await query(`
       SELECT 
         c.id,
         c.name,
@@ -47,8 +51,7 @@ async function getPopularCategories() {
       ORDER BY product_count DESC
       LIMIT 6
     `)
-
-    return categories
+    return isProductArray(categoriesRaw) ? (categoriesRaw as any) : []
   } catch (error) {
     console.error('Error fetching popular categories:', error)
     return []
@@ -57,7 +60,7 @@ async function getPopularCategories() {
 
 async function getBestSellingProducts() {
   try {
-    const products = await query(`
+    const productsRaw = await query(`
       SELECT 
         p.id,
         p.name,
@@ -74,8 +77,7 @@ async function getBestSellingProducts() {
       ORDER BY order_count DESC
       LIMIT 4
     `)
-
-    return products
+    return isProductArray(productsRaw) ? (productsRaw as any) : []
   } catch (error) {
     console.error('Error fetching best selling products:', error)
     return []
@@ -84,7 +86,7 @@ async function getBestSellingProducts() {
 
 async function getLatestProducts() {
   try {
-    const products = await query(`
+    const productsRaw = await query(`
       SELECT 
         p.id,
         p.name,
@@ -98,23 +100,10 @@ async function getLatestProducts() {
       ORDER BY p.created_at DESC
       LIMIT 4
     `)
-
-    return products
+    return isProductArray(productsRaw) ? (productsRaw as any) : []
   } catch (error) {
     console.error('Error fetching latest products:', error)
     return []
-  }
-}
-
-async function getSiteSettings() {
-  try {
-    const settings = await query(`
-      SELECT * FROM settings LIMIT 1
-    `)
-    return settings[0]
-  } catch (error) {
-    console.error('Error fetching site settings:', error)
-    return null
   }
 }
 
@@ -123,14 +112,12 @@ export default async function Home() {
     featuredProducts,
     popularCategories,
     bestSellingProducts,
-    latestProducts,
-    settings
+    latestProducts
   ] = await Promise.all([
     getFeaturedProducts(),
     getPopularCategories(),
     getBestSellingProducts(),
-    getLatestProducts(),
-    getSiteSettings()
+    getLatestProducts()
   ])
 
   return (
@@ -150,7 +137,7 @@ export default async function Home() {
             </div>
             
             <h1 className="text-6xl md:text-7xl font-bold bg-gradient-to-r from-slate-800 via-slate-600 to-slate-800 bg-clip-text text-transparent mb-6 leading-tight md:leading-[1.1] pb-2">
-              {settings?.site_name || 'Beautiful Things'}
+              Beautiful Things
             </h1>
             
             <p className="text-xl text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed">

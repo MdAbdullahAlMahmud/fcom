@@ -29,7 +29,8 @@ export async function GET(request: Request) {
       LEFT JOIN addresses a ON o.shipping_address_id = a.id
       WHERE o.tracking_number = ?
     `
-    const orderResult = await query(orderQuery, [trackingNumber])
+    const orderResultRaw = await query(orderQuery, [trackingNumber])
+    const orderResult = Array.isArray(orderResultRaw) ? orderResultRaw : []
 
     if (orderResult.length === 0) {
       return NextResponse.json(
@@ -39,6 +40,12 @@ export async function GET(request: Request) {
     }
 
     const order = orderResult[0]
+    if (!order || typeof order !== 'object') {
+      return NextResponse.json(
+        { success: false, message: 'Order not found' },
+        { status: 404 }
+      )
+    }
 
     // Get order items
     const itemsQuery = `
@@ -49,7 +56,8 @@ export async function GET(request: Request) {
       LEFT JOIN products p ON oi.product_id = p.id
       WHERE oi.order_id = ?
     `
-    const itemsResult = await query(itemsQuery, [order.id])
+    const itemsResultRaw = await query(itemsQuery, [order && 'id' in order ? order.id : undefined])
+    const itemsResult = Array.isArray(itemsResultRaw) ? itemsResultRaw : []
 
     // Get order status history
     const statusHistoryQuery = `
@@ -61,32 +69,33 @@ export async function GET(request: Request) {
       WHERE order_id = ?
       ORDER BY created_at DESC
     `
-    const statusHistoryResult = await query(statusHistoryQuery, [order.id])
+    const statusHistoryResultRaw = await query(statusHistoryQuery, [order && 'id' in order ? order.id : undefined])
+    const statusHistoryResult = Array.isArray(statusHistoryResultRaw) ? statusHistoryResultRaw : []
 
     // Format the response
     const response = {
-      order_number: order.order_number,
-      tracking_number: order.tracking_number,
-      status: order.status,
-      total_amount: order.total_amount,
-      created_at: order.created_at,
+      order_number: 'order_number' in order ? order.order_number : undefined,
+      tracking_number: 'tracking_number' in order ? order.tracking_number : undefined,
+      status: 'status' in order ? order.status : undefined,
+      total_amount: 'total_amount' in order ? order.total_amount : undefined,
+      created_at: 'created_at' in order ? order.created_at : undefined,
       shipping_address: {
-        full_name: order.full_name,
-        address_line1: order.address_line1,
-        address_line2: order.address_line2,
-        city: order.city,
-        state: order.state,
-        postal_code: order.postal_code,
-        country: order.country,
-        phone: order.phone
+        full_name: 'full_name' in order ? order.full_name : undefined,
+        address_line1: 'address_line1' in order ? order.address_line1 : undefined,
+        address_line2: 'address_line2' in order ? order.address_line2 : undefined,
+        city: 'city' in order ? order.city : undefined,
+        state: 'state' in order ? order.state : undefined,
+        postal_code: 'postal_code' in order ? order.postal_code : undefined,
+        country: 'country' in order ? order.country : undefined,
+        phone: 'phone' in order ? order.phone : undefined
       },
-      items: itemsResult.map(item => ({
+      items: itemsResult.map((item: any) => ({
         product_name: item.product_name,
         quantity: item.quantity,
         unit_price: item.unit_price,
         total_price: item.total_price
       })),
-      status_history: statusHistoryResult.map(status => ({
+      status_history: statusHistoryResult.map((status: any) => ({
         status: status.status,
         created_at: status.created_at,
         notes: status.notes
@@ -102,4 +111,4 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

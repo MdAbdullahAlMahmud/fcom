@@ -9,9 +9,10 @@ const JWT_SECRET = new TextEncoder().encode(
 
 export async function GET() {
   try {
-    const [settings] = await query(
+    const settingsResult = await query(
       'SELECT * FROM settings WHERE id = 1'
-    )
+    );
+    const settings = Array.isArray(settingsResult) ? settingsResult[0] : undefined;
 
     return NextResponse.json(settings || {})
   } catch (error) {
@@ -37,12 +38,13 @@ export async function PUT(request: Request) {
     const userId = payload.sub as string
 
     // Verify user is admin
-    const [user] = await query(
+    const userResult = await query(
       'SELECT role FROM admins WHERE id = ?',
       [userId]
-    )
+    );
+    const user = Array.isArray(userResult) ? userResult[0] : undefined;
 
-    if (!user || user.role !== 'admin') {
+    if (!user || typeof user !== 'object' || !('role' in user) || user.role !== 'admin') {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 401 }
@@ -79,4 +81,4 @@ export async function PUT(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

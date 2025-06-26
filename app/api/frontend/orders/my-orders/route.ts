@@ -23,26 +23,32 @@ export async function GET(request: Request) {
     }
 
     // Get phone from token
-    const phone = decoded.phone
+    const phone = (decoded && typeof decoded === 'object' && 'phone' in decoded) ? (decoded as any).phone : undefined;
+    if (!phone) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid token payload' },
+        { status: 401 }
+      )
+    }
 
     // First get customer IDs for this phone number
-    const customers = await query(
+    const customersResult = await query(
       'SELECT id FROM customers WHERE phone = ?',
       [phone]
-    )
-
-    if (!customers.length) {
+    );
+    const customers = Array.isArray(customersResult) ? customersResult : [];
+    if (customers.length === 0) {
       return NextResponse.json({
         success: true,
         orders: []
       })
     }
 
-    const customerIds = customers.map(c => c.id)
-    const placeholders = customerIds.map(() => '?').join(',')
+    const customerIds = customers.map((c: any) => c.id);
+    const placeholders = customerIds.map(() => '?').join(',');
 
     // Fetch orders with items and address
-    const orders = await query(`
+    const ordersResult = await query(`
       SELECT 
         o.*,
         a.address_line1 as shipping_address_line1,
@@ -55,22 +61,27 @@ export async function GET(request: Request) {
       LEFT JOIN addresses a ON o.shipping_address_id = a.id
       WHERE o.user_id IN (${placeholders})
       ORDER BY o.created_at DESC
-    `, customerIds)
+    `, customerIds);
+    const orders = Array.isArray(ordersResult) ? ordersResult : [];
 
     // Fetch order items for each order
     for (const order of orders) {
-      const items = await query(`
-        SELECT 
-          oi.*,
-          p.name as product_name,
-          pi.image_url as product_image
-        FROM order_items oi
-        LEFT JOIN products p ON oi.product_id = p.id
-        LEFT JOIN product_images pi ON p.id = pi.product_id
-        WHERE oi.order_id = ?
-        GROUP BY oi.id
-      `, [order.id])
-      order.items = items
+      if (order && typeof order === 'object' && 'id' in order) {
+        const itemsResult = await query(`
+          SELECT 
+            oi.*,
+            p.name as product_name,
+            pi.image_url as product_image
+          FROM order_items oi
+          LEFT JOIN products p ON oi.product_id = p.id
+          LEFT JOIN product_images pi ON p.id = pi.product_id
+          WHERE oi.order_id = ?
+          GROUP BY oi.id
+        `, [order.id]);
+        if (Array.isArray(itemsResult)) {
+          (order as any).items = itemsResult;
+        }
+      }
     }
 
     return NextResponse.json({
@@ -84,4 +95,4 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

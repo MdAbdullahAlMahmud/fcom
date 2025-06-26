@@ -38,9 +38,10 @@ export async function GET(
       GROUP BY o.id
     `
     
-    const [order] = await query(orderQuery, [orderNumber])
-    
-    if (!order) {
+    const orderResult = await query(orderQuery, [orderNumber]);
+    const order = Array.isArray(orderResult) ? orderResult[0] : undefined;
+
+    if (!order || typeof order !== 'object') {
       return NextResponse.json(
         { message: 'Order not found' },
         { status: 404 }
@@ -48,27 +49,30 @@ export async function GET(
     }
 
     // Parse the items JSON string into an array
-    order.items = JSON.parse(`[${order.items}]`)
-
-    // Format the shipping address
-    order.shipping_address = {
-      full_name: order.full_name,
-      address_line1: order.address_line1,
-      city: order.city,
-      state: order.state,
-      postal_code: order.postal_code,
-      country: order.country,
-      phone: order.phone
+    if ('items' in order && typeof order.items === 'string') {
+      order.items = JSON.parse(`[${order.items}]`)
     }
 
-    // Remove the individual address fields from the root level
-    delete order.full_name
-    delete order.address_line1
-    delete order.city
-    delete order.state
-    delete order.postal_code
-    delete order.country
-    delete order.phone
+    // Format the shipping address
+    if ('full_name' in order && 'address_line1' in order && 'city' in order && 'state' in order && 'postal_code' in order && 'country' in order && 'phone' in order) {
+      order.shipping_address = {
+        full_name: order.full_name,
+        address_line1: order.address_line1,
+        city: order.city,
+        state: order.state,
+        postal_code: order.postal_code,
+        country: order.country,
+        phone: order.phone
+      }
+      // Remove the individual address fields from the root level
+      delete order.full_name
+      delete order.address_line1
+      delete order.city
+      delete order.state
+      delete order.postal_code
+      delete order.country
+      delete order.phone
+    }
 
     return NextResponse.json(order)
   } catch (error) {
@@ -78,4 +82,4 @@ export async function GET(
       { status: 500 }
     )
   }
-} 
+}

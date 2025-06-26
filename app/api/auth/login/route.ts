@@ -17,10 +17,11 @@ export async function POST(request: Request) {
     console.log('Login attempt for:', email)
 
     // Get user from database
-    const [user] = await query<User[]>(
+    const userResult = await query(
       'SELECT * FROM admins WHERE email = ? AND status = "active"',
       [email]
-    )
+    );
+    const user = (Array.isArray(userResult) && userResult.length > 0 && typeof userResult[0] === 'object') ? userResult[0] as User : undefined;
 
     if (!user) {
       console.log('User not found:', email)
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     // Verify password
-    const isValid = await compare(password, user.password)
+    const isValid = user && 'password' in user ? await compare(password, user.password) : false
     if (!isValid) {
       console.log('Invalid password for user:', email)
       return NextResponse.json(
@@ -44,8 +45,8 @@ export async function POST(request: Request) {
 
     // Generate JWT token
     const token = await new SignJWT({ 
-      userId: user.id,
-      role: user.role 
+      userId: user && 'id' in user ? user.id : undefined,
+      role: user && 'role' in user ? user.role : undefined
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
@@ -62,7 +63,9 @@ export async function POST(request: Request) {
     })
 
     // Return user data without password
-    const { password: _, ...userWithoutPassword } = user
+    const userWithoutPassword = user && typeof user === 'object' && 'password' in user
+      ? (({ password, ...rest }) => rest)(user)
+      : user;
     return NextResponse.json({ 
       user: userWithoutPassword,
       message: 'Login successful'
@@ -74,4 +77,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

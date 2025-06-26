@@ -51,11 +51,12 @@ export async function GET(request: Request) {
     const whereSQL = whereClause.length > 0 ? `WHERE ${whereClause.join(' AND ')}` : ''
 
     // Get total count
-    const [countResult] = await query(
+    const countResultArr = await query(
       `SELECT COUNT(*) as total FROM customers c ${whereSQL}`,
       params
-    )
-    const total = countResult.total
+    );
+    const countResult = Array.isArray(countResultArr) ? countResultArr[0] : undefined;
+    const total = (countResult && typeof countResult === 'object' && 'total' in countResult) ? (countResult as any).total : 0;
 
     // Get customers with their order statistics
     const sqlQuery = `
@@ -151,4 +152,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

@@ -1,12 +1,21 @@
 'use client'
+import * as React from 'react'
 
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 export default function OrderSuccessPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <OrderSuccessContent />
+    </React.Suspense>
+  )
+}
+
+function OrderSuccessContent() {
   const searchParams = useSearchParams()
-  const orderNumber = searchParams.get('orderNumber')
-  const trackingNumber = searchParams.get('trackingNumber')
+  const orderNumber = searchParams ? searchParams.get('orderNumber') : ''
+  const trackingNumber = searchParams ? searchParams.get('trackingNumber') : ''
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -44,7 +53,6 @@ export default function OrderSuccessPage() {
                   {orderNumber}
                 </dd>
               </div>
-            
             </dl>
           </div>
 
@@ -77,4 +85,4 @@ export default function OrderSuccessPage() {
       </div>
     </div>
   )
-} 
+}

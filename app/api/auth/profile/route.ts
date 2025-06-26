@@ -24,10 +24,11 @@ export async function PUT(request: Request) {
     const { name, email, currentPassword, newPassword } = await request.json()
 
     // Get current user data
-    const [user] = await query<any[]>(
+    const userResult = await query(
       'SELECT * FROM admins WHERE id = ?',
       [userId]
-    )
+    );
+    const user = Array.isArray(userResult) ? userResult[0] : undefined;
 
     if (!user) {
       return NextResponse.json(
@@ -37,8 +38,9 @@ export async function PUT(request: Request) {
     }
 
     // If changing password, verify current password
-    if (currentPassword && newPassword) {
-      const isValid = await compare(currentPassword, user.password)
+    let isValid = false;
+    if (currentPassword && newPassword && user && typeof user === 'object' && 'password' in user) {
+      isValid = await compare(currentPassword, user.password);
       if (!isValid) {
         return NextResponse.json(
           { message: 'Current password is incorrect' },
@@ -68,4 +70,4 @@ export async function PUT(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

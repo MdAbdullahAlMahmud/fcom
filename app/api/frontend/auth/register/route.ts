@@ -14,10 +14,11 @@ export async function POST(request: Request) {
     }
 
     // Check if phone number already exists
-    const [existingCustomer] = await query(
+    const existingCustomerResult = await query(
       'SELECT * FROM registered_customers WHERE phone = ?',
       [phone]
-    )
+    );
+    const existingCustomer = Array.isArray(existingCustomerResult) ? existingCustomerResult[0] : undefined;
 
     if (existingCustomer) {
       return NextResponse.json(
@@ -55,4 +56,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

@@ -14,10 +14,11 @@ export async function POST(request: Request) {
     }
 
     // Get customer with OTP
-    const [customer] = await query(
+    const customerResult = await query(
       'SELECT * FROM registered_customers WHERE phone = ? AND otp = ?',
       [phone, otp]
-    )
+    );
+    const customer = Array.isArray(customerResult) ? customerResult[0] : undefined;
 
     if (!customer) {
       return NextResponse.json(
@@ -51,4 +52,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

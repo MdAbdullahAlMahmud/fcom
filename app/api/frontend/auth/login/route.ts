@@ -15,10 +15,11 @@ export async function POST(request: Request) {
     }
 
     // Get customer
-    const [customer] = await query(
+    const customerResult = await query(
       'SELECT * FROM registered_customers WHERE phone = ?',
       [phone]
-    )
+    );
+    const customer = Array.isArray(customerResult) ? customerResult[0] : undefined;
 
     if (!customer) {
       return NextResponse.json(
@@ -28,7 +29,9 @@ export async function POST(request: Request) {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, customer.password)
+    const isValidPassword = customer && typeof customer === 'object' && 'password' in customer
+      ? await bcrypt.compare(password, customer.password)
+      : false;
     if (!isValidPassword) {
       return NextResponse.json(
         { success: false, message: 'Invalid credentials' },
@@ -38,8 +41,8 @@ export async function POST(request: Request) {
 
     // Generate JWT token
     const token = generateToken({ 
-      id: customer.id,
-      phone: customer.phone
+      id: customer && typeof customer === 'object' && 'id' in customer ? customer.id : undefined,
+      phone: customer && typeof customer === 'object' && 'phone' in customer ? customer.phone : undefined
     })
 
     return NextResponse.json({
@@ -47,8 +50,8 @@ export async function POST(request: Request) {
       message: 'Login successful',
       token,
       customer: {
-        id: customer.id,
-        phone: customer.phone
+        id: customer && typeof customer === 'object' && 'id' in customer ? customer.id : undefined,
+        phone: customer && typeof customer === 'object' && 'phone' in customer ? customer.phone : undefined
       }
     })
 
@@ -59,4 +62,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-} 
+}

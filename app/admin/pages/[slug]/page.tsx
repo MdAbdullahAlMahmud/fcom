@@ -16,7 +16,7 @@ const PAGE_LABELS: Record<string, string> = {
 export default function AdminPageEditor() {
   const router = useRouter();
   const pathname = usePathname();
-  const slug = pathname.split("/").pop() || "contact";
+  const slug = pathname ? pathname.split("/").pop() || "contact" : "contact";
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);

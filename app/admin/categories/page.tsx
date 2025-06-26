@@ -41,6 +41,7 @@ interface Category {
   parent_id: number | null
   image_url: string | null
   is_active: boolean
+  created_at?: string // Add created_at as optional
 }
 
 type SortField = 'name' | 'created_at'
@@ -99,14 +100,17 @@ export default function CategoriesPage() {
 
     // Apply sorting
     filtered.sort((a, b) => {
-      const aValue = a[sortField]
-      const bValue = b[sortField]
-      const modifier = sortOrder === 'asc' ? 1 : -1
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return aValue.localeCompare(bValue) * modifier
+      let aValue: string = ''
+      let bValue: string = ''
+      if (sortField === 'name') {
+        aValue = a.name || ''
+        bValue = b.name || ''
+      } else if (sortField === 'created_at') {
+        aValue = a.created_at || ''
+        bValue = b.created_at || ''
       }
-      return 0
+      const modifier = sortOrder === 'asc' ? 1 : -1
+      return aValue.localeCompare(bValue) * modifier
     })
 
     setFilteredCategories(filtered)
@@ -429,18 +433,20 @@ export default function CategoriesPage() {
             {filteredCategories.map((category) => (
               <TableRow key={category.id}>
                 <TableCell>
-                  {category.image_url && (
+                  {category.image_url ? (
                     <img
                       src={category.image_url}
-                      alt={category.name}
+                      alt={category.name || 'Category'}
                       className="w-12 h-12 object-cover rounded"
                     />
-                  )}
+                  ) : null}
                 </TableCell>
                 <TableCell>{category.name}</TableCell>
-                <TableCell>{category.description}</TableCell>
+                <TableCell>{category.description || '-'}</TableCell>
                 <TableCell>
-                  {categories.find((c) => c.id === category.parent_id)?.name || '-'}
+                  {category.parent_id && categories.find((c) => c.id === category.parent_id)?.name
+                    ? categories.find((c) => c.id === category.parent_id)?.name
+                    : '-'}
                 </TableCell>
                 <TableCell>
                   {category.is_active ? 'Active' : 'Inactive'}
@@ -468,4 +474,4 @@ export default function CategoriesPage() {
       )}
     </div>
   )
-} 
+}

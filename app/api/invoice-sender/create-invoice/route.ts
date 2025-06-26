@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
 
     // Upload to Google Drive
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined
-    const invoiceLink = await uploadToDrive(oAuth2Client, outputPath, fileName, folderId)
+    const invoiceLinkRaw = await uploadToDrive(oAuth2Client, outputPath, fileName, folderId)
+    const invoiceLink = invoiceLinkRaw ?? undefined;
 
     // Send Email via Gmail OAuth2
     await sendInvoiceEmail({
@@ -66,6 +67,10 @@ export async function POST(req: NextRequest) {
         refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
         accessToken: undefined,
       },
+      // Required fields for emailService.js
+      subject: undefined,
+      html: undefined,
+      text: undefined,
     })
 
     return NextResponse.json({ message: 'Invoice created and sent!', invoiceLink })

@@ -32,27 +32,31 @@ export async function GET() {
     }
 
     // Get total products count
-    const [productCount] = await query(
+    const productCountArr = await query(
       'SELECT COUNT(*) as count FROM products'
-    )
+    );
+    const productCount = Array.isArray(productCountArr) ? productCountArr[0] : undefined;
 
     // Get total orders count and revenue
-    const [orderStats] = await query(`
+    const orderStatsArr = await query(`
       SELECT 
         COUNT(*) as total_orders,
         COALESCE(SUM(total_amount), 0) as total_revenue
       FROM orders
-    `)
+    `);
+    const orderStats = Array.isArray(orderStatsArr) ? orderStatsArr[0] : undefined;
 
     // Get total customers count
-    const [customerCount] = await query(
+    const customerCountArr = await query(
       'SELECT COUNT(*) as count FROM customers'
-    )
+    );
+    const customerCount = Array.isArray(customerCountArr) ? customerCountArr[0] : undefined;
 
     // Get total categories count
-    const [categoryCount] = await query(
+    const categoryCountArr = await query(
       'SELECT COUNT(*) as count FROM categories'
-    )
+    );
+    const categoryCount = Array.isArray(categoryCountArr) ? categoryCountArr[0] : undefined;
 
     // Get day-wise order counts for the last 7 days
     const dayWiseOrders = await query(`
@@ -66,11 +70,11 @@ export async function GET() {
     `)
 
     return NextResponse.json({
-      totalProducts: productCount.count,
-      totalOrders: orderStats.total_orders,
-      totalRevenue: orderStats.total_revenue,
-      totalCustomers: customerCount.count,
-      totalCategories: categoryCount.count,
+      totalProducts: (productCount && typeof productCount === 'object' && 'count' in productCount) ? (productCount as any).count : 0,
+      totalOrders: (orderStats && typeof orderStats === 'object' && 'total_orders' in orderStats) ? (orderStats as any).total_orders : 0,
+      totalRevenue: (orderStats && typeof orderStats === 'object' && 'total_revenue' in orderStats) ? (orderStats as any).total_revenue : 0,
+      totalCustomers: (customerCount && typeof customerCount === 'object' && 'count' in customerCount) ? (customerCount as any).count : 0,
+      totalCategories: (categoryCount && typeof categoryCount === 'object' && 'count' in categoryCount) ? (categoryCount as any).count : 0,
       dayWiseOrders
     })
   } catch (error) {
@@ -80,4 +84,4 @@ export async function GET() {
       { status: 500 }
     )
   }
-} 
+}
